@@ -16,6 +16,24 @@ enum Colour {
 };
 
 
+class Edge {
+public:
+    size_t first;
+    size_t second;
+    int32_t weight;
+
+    Edge(size_t first, size_t second, int32_t weight) {
+        this->first = first;
+        this->second = second;
+        this->weight = weight;
+    }
+
+    bool operator< (const Edge &a) const {
+        return this->first < a.first || this->first == a.first && this->second < a.second;
+    }
+};
+
+
 class Graph {
 private:
     std::vector<std::vector<size_t>> neighbours;  // matrix
@@ -35,25 +53,26 @@ public:
         neighbours.resize(num_of_nodes);
 
         for (auto &line: neighbours) {
-            l
+            line.resize(num_of_nodes);
+            std::fill(line.begin(), line.end(), 0);
         }
     }
 
-    void build(const std::vector<std::pair<size_t, size_t>> &edges) {
+    void build(const std::vector<Edge> &edges) {
         for (auto &edge : edges) {
-            set_neighbour(edge.first, edge.second);
+            set_neighbour(edge.first, edge.second, edge.weight);
         }
     }
 
-    void build(const std::set<std::pair<size_t, size_t>> &edges) {
+    void build(const std::set<Edge> &edges) {
         for (auto &edge : edges) {
-            set_neighbour(edge.first, edge.second);
+            set_neighbour(edge.first, edge.second, edge.weight);
         }
     }
 
-    void build_directed(const std::vector<std::pair<size_t, size_t>> &edges) {
+    void build_directed(const std::vector<Edge> &edges) {
         for (auto &edge : edges) {
-            set_neighbour_directed(edge.first, edge.second);
+            set_neighbour_directed(edge.first, edge.second, edge.weight);
         }
     }
 
@@ -66,73 +85,46 @@ public:
     }
 
     void remove_neighbour(size_t node_index, size_t neighbour_index) {
-        for(typename std::vector<size_t>::iterator it = neighbours[node_index].begin(); it != neighbours[node_index].end(); ++it) {
-            if ((*it) == neighbour_index) {
-                neighbours[node_index].erase(it);
-                break;
-            }
-        }
-
-        for(typename std::vector<size_t>::iterator it = neighbours[neighbour_index].begin(); it != neighbours[neighbour_index].end(); ++it) {
-            if ((*it) == node_index) {
-                neighbours[neighbour_index].erase(it);
-                break;
-            }
-        }
+        neighbours[node_index][neighbour_index] = 0;
+        neighbours[neighbour_index][node_index] = 0;
     }
 
     void remove_neighbour_directed(size_t node_index, size_t neighbour_index) {
-        for(typename std::vector<size_t>::iterator it = neighbours[node_index].begin(); it != neighbours[node_index].end(); ++it) {
-            if ((*it) == neighbour_index) {
-                neighbours[node_index].erase(it);
-                break;
-            }
-        }
+        neighbours[node_index][neighbour_index] =  0;
     }
 
-    void set_neighbour(size_t node_index, size_t neighbour_index) {
-        neighbours[node_index].push_back(neighbour_index);
-        neighbours[neighbour_index].push_back(node_index);
+    void set_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
+        neighbours[node_index][neighbour_index] = weight;
+        neighbours[neighbour_index][node_index] = weight;
     }
 
-    void set_neighbour_directed(size_t node_index, size_t neighbour_index) {
-        neighbours[node_index].push_back(neighbour_index);
+    void set_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
+        neighbours[node_index][neighbour_index] = weight;
     }
 
-    void add_neighbour(size_t node_index, size_t neighbour_index) {
-        if (!check_neighbour(node_index, neighbour_index)) {
-            neighbours[node_index].push_back(neighbour_index);
-        }
-        if (!check_neighbour(neighbour_index, node_index)) {
-            neighbours[neighbour_index].push_back(node_index);
-        }
+    void add_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
+        set_neighbour(node_index, neighbour_index, weight);
     }
 
-    void add_neighbour_directed(size_t node_index, size_t neighbour_index) {
-        if (!check_neighbour(node_index, neighbour_index)) {
-            neighbours[node_index].push_back(neighbour_index);
-        }
+    void add_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
+        set_neighbour_directed(node_index, neighbour_index, weight);
     }
 
     [[nodiscard]] bool check_neighbour(size_t node_index, size_t neighbour_index) const {
-        for (size_t node_child : neighbours[node_index]) {
-            if (node_child == neighbour_index) {
-                return true;
-            }
-        }
-
-        return false;
+        return neighbours[node_index][neighbour_index] != 0;
     }
 
     void revert_edge(size_t node_index, size_t neighbour_index) {
-        if (!check_neighbour(node_index, neighbour_index)) {
-            remove_neighbour_directed(node_index, neighbour_index);
-            add_neighbour_directed(neighbour_index, node_index);
-        }
+        std::swap(neighbours[node_index][neighbour_index], neighbours[neighbour_index][node_index]);
     }
 
     [[nodiscard]] size_t node_degree(size_t node_index) const {
-        return neighbours[node_index].size();
+        size_t counter = 0;
+        for (auto node : neighbours[node_index]) {
+            if (node != 0) counter++;
+        }
+
+        return counter;
     }
 
 
@@ -207,29 +199,33 @@ public:
     GraphGenerator() = default;
 
     // Generate tree (2 dir edges)
-    static void generate_tree_edges(const Graph &graph, std::set<std::pair<size_t, size_t>> &edges) {
-        std::mt19937 gen;
-        edges.clear();
-
-        size_t last_taken = 0;
-
-        for (size_t i = 1; i < graph.size(); ++i) {
-            size_t chosen = gen() % ++last_taken;
-            edges.emplace(chosen, last_taken);
-        }
+    static void generate_tree_edges(const Graph &graph, std::set<Edge> &edges) {
+//        std::mt19937 gen;
+//        edges.clear();
+//
+//        size_t last_taken = 0;
+//
+//        for (size_t i = 1; i < graph.size(); ++i) {
+//            int32_t weight = 1;
+//
+//            size_t chosen = gen() % ++last_taken;
+//            edges.emplace(chosen, last_taken, weight);
+//        }
     }
 
     // Generate tree (2 dir edges)
-    static void generate_tree_edges(const Graph &graph, std::vector<std::pair<size_t, size_t>> &edges) {
-        std::mt19937 gen;
-        edges.clear();
-
-        size_t last_taken = 0;
-
-        for (size_t i = 1; i < graph.size(); ++i) {
-            size_t chosen = gen() % ++last_taken;
-            edges.emplace_back(chosen, last_taken);
-        }
+    static void generate_tree_edges(const Graph &graph, std::vector<Edge> &edges) {
+//        std::mt19937 gen;
+//        edges.clear();
+//
+//        size_t last_taken = 0;
+//
+//        for (size_t i = 1; i < graph.size(); ++i) {
+//            int32_t weight = 1;  // TODO
+//
+//            size_t chosen = gen() % ++last_taken;
+//            edges.emplace_back(chosen, last_taken, weight);
+//        }
     }
 
     static void build_by_prob(Graph &graph, float prob_f) {
@@ -241,20 +237,16 @@ public:
     // probability = 1 / prob
     static void build_by_prob_inv(Graph &graph, size_t prob) {
         std::mt19937 gen;
-        std::set<std::pair<size_t, size_t>> edges;
+        std::set<Edge> edges;
 
-        // Generate tree (for one куомпонента связности)
-        generate_tree_edges(graph, edges);
-
-        // Generate others edges
-        // by prob
-        // TODO count prob accounting already taken edges
         for (size_t i = 0; i < graph.size(); ++i) {
             for (size_t j = i + 1; j < graph.size(); ++j) {
 //                std::pair<size_t, size_t> temp_edge(i, j);
 
                 if (gen() % prob == 0) {
-                    edges.emplace(i, j);
+                    int32_t weight = 1;
+
+                    edges.emplace(i, j, weight);
                 }
             }
         }
@@ -265,29 +257,27 @@ public:
     // Generate graph with one connected component by num_of_edges
     static void build_by_number(Graph &graph, size_t num_of_edges) {
         std::mt19937 gen;
-        std::set<std::pair<size_t, size_t>> edges;
+        std::set<Edge> edges;
 
-        // Generate tree (for one куомпонента связности)
-        generate_tree_edges(graph, edges);
 
-        std::vector<std::pair<size_t, size_t>> all_others_edges;
+        std::vector<std::pair<size_t , size_t >> total_edges_vector;
         for (size_t i = 0; i < graph.size(); ++i) {
-            for (size_t j = i + 1; j < graph.size(); ++j) {
-                std::pair<size_t, size_t> temp_edge(i, j);
-
-                if (edges.find(temp_edge) == edges.end()) {
-                    all_others_edges.push_back(temp_edge);
-                }
+            for (size_t j = 0; j < graph.size(); ++j) {
+                total_edges_vector.emplace_back(i, j);
             }
         }
+        std::shuffle(total_edges_vector.begin(), total_edges_vector.end(), gen);
 
-        size_t left_edges = num_of_edges - (graph.size() - 1);
-        std::shuffle(all_others_edges.begin(), all_others_edges.end(), gen);
+        while (num_of_edges > 0 && !total_edges_vector.empty()) {
+            std::pair<size_t, size_t> edge = total_edges_vector.back();
+            int32_t weight = 1;
 
-        while (left_edges > 0 && !all_others_edges.empty()) {
-            edges.insert(all_others_edges.back());
-            all_others_edges.pop_back();
+            edges.emplace(edge.first, edge.second, weight);
+            total_edges_vector.pop_back();
+
+            --num_of_edges;
         }
+
 
         graph.build(edges);
     }
