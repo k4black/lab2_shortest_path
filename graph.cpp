@@ -36,7 +36,8 @@ public:
 
 class Graph {
 private:
-    std::vector<std::vector<size_t>> neighbours;  // matrix
+    std::vector<std::vector<size_t>> matrix;  // matrix
+//    std::vector<std::vector<size_t>> adjacency;  // adjacency list
     size_t num_of_nodes = 0;
 
 public:
@@ -49,10 +50,10 @@ public:
     void reserve(size_t num_of_nodes) {
         this->num_of_nodes = num_of_nodes;
 
-        neighbours.clear();
-        neighbours.resize(num_of_nodes);
+        matrix.clear();
+        matrix.resize(num_of_nodes);
 
-        for (auto &line: neighbours) {
+        for (auto &line: matrix) {
             line.resize(num_of_nodes);
             std::fill(line.begin(), line.end(), 0);
         }
@@ -77,29 +78,29 @@ public:
     }
 
     [[nodiscard]] const std::vector<size_t>& operator[](size_t node_index) const {
-        return neighbours[node_index];
+        return matrix[node_index];
     }
 
     [[nodiscard]] const std::vector<size_t>&get_neighbours(size_t node_index) const {
-        return neighbours[node_index];
+        return matrix[node_index];
     }
 
     void remove_neighbour(size_t node_index, size_t neighbour_index) {
-        neighbours[node_index][neighbour_index] = 0;
-        neighbours[neighbour_index][node_index] = 0;
+        matrix[node_index][neighbour_index] = 0;
+        matrix[neighbour_index][node_index] = 0;
     }
 
     void remove_neighbour_directed(size_t node_index, size_t neighbour_index) {
-        neighbours[node_index][neighbour_index] =  0;
+        matrix[node_index][neighbour_index] =  0;
     }
 
     void set_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
-        neighbours[node_index][neighbour_index] = weight;
-        neighbours[neighbour_index][node_index] = weight;
+        matrix[node_index][neighbour_index] = weight;
+        matrix[neighbour_index][node_index] = weight;
     }
 
     void set_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
-        neighbours[node_index][neighbour_index] = weight;
+        matrix[node_index][neighbour_index] = weight;
     }
 
     void add_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
@@ -111,16 +112,16 @@ public:
     }
 
     [[nodiscard]] bool check_neighbour(size_t node_index, size_t neighbour_index) const {
-        return neighbours[node_index][neighbour_index] != 0;
+        return matrix[node_index][neighbour_index] != 0;
     }
 
     void revert_edge(size_t node_index, size_t neighbour_index) {
-        std::swap(neighbours[node_index][neighbour_index], neighbours[neighbour_index][node_index]);
+        std::swap(matrix[node_index][neighbour_index], matrix[neighbour_index][node_index]);
     }
 
     [[nodiscard]] size_t node_degree(size_t node_index) const {
         size_t counter = 0;
-        for (auto node : neighbours[node_index]) {
+        for (auto node : matrix[node_index]) {
             if (node != 0) counter++;
         }
 
