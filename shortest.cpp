@@ -51,3 +51,55 @@ void BellmanFord(Graph &graph, size_t src) {
     }
 }
 
+
+
+
+
+void FloydWarshall(Graph &graph) {
+    std::vector<std::vector<int64_t>> dist(graph.size(), std::vector<int64_t>(graph.size(), 0));
+
+
+    // TODO: Think do better
+    for (size_t node : graph) {
+        size_t j = 0;
+        for (auto weight : graph[node]) {
+            if (weight == 0) {
+                dist[node][j] = INT64_MAX;
+            } else {
+                dist[node][j] = weight;
+            }
+            ++j;
+        }
+    }
+
+
+    for (size_t k : graph) {
+        for (size_t i : graph) {
+            for (size_t j : graph) {
+                if (dist[i][k] == INT64_MAX || dist[k][j] == INT64_MAX) {
+                    continue;
+                }
+
+                if (dist[i][k] + dist[k][j] < dist[i][j]) {
+                    dist[i][j] = dist[i][k] + dist[k][j];
+                }
+            }
+        }
+    }
+
+
+    // Print the shortest distance matrix
+    std::cout<<"The following matrix shows the shortest distances between every pair of vertices \n";
+
+    for (int i = 0; i < graph.size(); i++) {
+        for (int j = 0; j < graph.size(); j++) {
+            if (dist[i][j] == INT64_MAX) {
+                std::cout << "INF" << "     ";
+            } else {
+                std::cout << dist[i][j] << "     ";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+

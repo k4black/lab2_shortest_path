@@ -6,23 +6,36 @@
 
 
 int main() {
-    Graph graph(5);
+//    Graph graph(5);
+//    std::vector<Edge> edges = { { 0, 1, -1 }, { 0, 2, 4 },
+//                              { 1, 2, 3 }, { 1, 3, 2 },
+//                              { 1, 4, 2 }, { 3, 2, 5 },
+//                              { 3, 1, 1 }, { 4, 3, -3 } };
+//    graph.build_directed(edges);
+//
+//    BellmanFord(graph, 0);
 
-    std::cout << INT64_MAX << std::endl;
 
 
-    std::vector<Edge> edges = { { 0, 1, -1 }, { 0, 2, 4 },
-                              { 1, 2, 3 }, { 1, 3, 2 },
-                              { 1, 4, 2 }, { 3, 2, 5 },
-                              { 3, 1, 1 }, { 4, 3, -3 } };
-
+    Graph graph(4);
+    std::vector<Edge> edges = { { 0, 3, 10 }, { 2, 3, 1 },
+                                { 1, 2, 3 }, { 0, 1, 5 } };
     graph.build_directed(edges);
 
-
-    BellmanFord(graph, 0);
+    FloydWarshall(graph);
 
 
     return 0;
+
+//
+//    int graph[V][V] = { {0, 5, INF, 10},
+//                        {INF, 0, 3, INF},
+//                        {INF, INF, 0, 1},
+//                        {INF, INF, INF, 0}
+//    };
+//
+//    // Print the solution
+//    FloydWarshall(graph);
 
 
 //    Graph graph(10);
