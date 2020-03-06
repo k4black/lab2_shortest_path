@@ -95,71 +95,22 @@ cdef class PyGraphGenerator:
         GraphGenerator.build_by_number(graph.graph, num_of_egdes)
 
 
-def cut_classes_multimap(graph: PyGraph, precision: str = '32') -> typing.List[typing.List[typing.Tuple[int, int]]]:
-    cdef vector[vector[pair[size_t, size_t]]] output
-    if precision == '32':
-        cut_classes_multimap_cpp[uint32_t](graph.graph, output)
-    elif precision == '64':
-        cut_classes_multimap_cpp[uint64_t](graph.graph, output)
-    else:
-        raise Exception(f'{precision} is not a supported precision for algorithm')
-    out: typing.List[typing.List[typing.Tuple[int, int]]] = []
-    for vec in output:
+
+def BellmanFord(graph: PyGraph, src: int) -> typing.List[int]:
+    cdef vector[vector[int]] output
+    FloydWarshall(graph.graph, src, output)
+    out: typing.List[int] = []
+    for dist in output:
+        out.append(dist)
+    return out
+
+
+def FloydWarshall(graph: PyGraph) -> typing.List[typing.List[int]]:
+    cdef vector[vector[int]] output
+    FloydWarshall(graph.graph, output)
+    out: typing.List[typing.List[int]] = []
+    for line in output:
         out.append([])
-        for pair in vec:
-            out[-1].append((pair.first, pair.second))
-    return out
-
-
-def cut_classes_sort(graph: PyGraph, precision: str = '32', sort: str = 'std') -> typing.List[typing.List[typing.Tuple[int, int]]]:
-    cdef vector[vector[pair[size_t, size_t]]] output
-    if sort == 'bucket':
-        if precision == '32':
-            cut_classes_sort_cpp[uint32_t, BucketSorter](graph.graph, output)
-        elif precision == '64':
-            cut_classes_sort_cpp[uint64_t, BucketSorter](graph.graph, output)
-        else:
-            raise Exception(f'{precision} is not a supported precision for algorithm')
-    elif sort == 'radix':
-        if precision == '32':
-            cut_classes_sort_cpp[uint32_t, RadixSorter](graph.graph, output)
-        elif precision == '64':
-            cut_classes_sort_cpp[uint64_t, RadixSorter](graph.graph, output)
-        else:
-            raise Exception(f'{precision} is not a supported precision for algorithm')
-    elif sort == 'std':
-        if precision == '32':
-            cut_classes_sort_cpp[uint32_t, StdSorter](graph.graph, output)
-        elif precision == '64':
-            cut_classes_sort_cpp[uint64_t, StdSorter](graph.graph, output)
-        else:
-            raise Exception(f'{precision} is not a supported precision for algorithm')
-    else:
-        raise Exception(f'{sort} is not a supported sorting functor')
-    out: typing.List[typing.List[typing.Tuple[int, int]]] = []
-    for vec in output:
-        out.append([])
-        for pair in vec:
-            out[-1].append((pair.first, pair.second))
-    return out
-
-def cut_edges(graph: PyGraph, precision: str = '32') -> typing.List[typing.Tuple[int, int]]:
-    cdef vector[pair[size_t, size_t]] output
-    if precision == '32':
-        cut_edges_cpp[uint32_t](graph.graph, output)
-    elif precision == '64':
-        cut_edges_cpp[uint64_t](graph.graph, output)
-    else:
-        raise Exception(f'{precision} is not a supported precision for algorithm')
-    out: typing.List[typing.Tuple[int, int]] = []
-    for pair in output:
-        out.append((pair.first, pair.second))
-    return out
-
-def find_bridges(graph: PyGraph) -> typing.List[typing.Tuple[int, int]]:
-    cdef vector[pair[size_t, size_t]] output
-    find_bridge_cpp(graph.graph, output)
-    out: typing.List[typing.Tuple[int, int]] = []
-    for pair in output:
-        out.append((pair.first, pair.second))
+        for dist in line:
+            out[-1].append(dist)
     return out

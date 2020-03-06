@@ -2,7 +2,7 @@
 #include "graph.cpp"
 
 
-void BellmanFord(Graph &graph, size_t src) {
+void BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &output) {
     std::vector<Edge> edges;
 
     // TODO: Think do better
@@ -55,7 +55,7 @@ void BellmanFord(Graph &graph, size_t src) {
 
 
 
-void FloydWarshall(Graph &graph) {
+void FloydWarshall(Graph &graph, std::vector<int64_t> &output) {
     std::vector<std::vector<int64_t>> dist(graph.size(), std::vector<int64_t>(graph.size(), 0));
 
 

@@ -63,34 +63,7 @@ cdef extern from "graph.cpp":
         void build_by_number(Graph &graph, size_t num_of_edges)
 
 
-cdef extern from "auxiliary.cpp":
+cdef extern from "shortest.cpp":
 
-    cdef void find_bridge_dfs(const Graph &graph,
-        vector[pair[size_t, size_t]] &bridges,
-        vector[size_t] &times,
-        vector[size_t] &fup,
-        vector[Colour] &colours,
-        size_t &last_time,
-        size_t current_node,
-        size_t parent_node)
-    cdef void find_bridge(Graph &graph, vector[pair[size_t, size_t]] &bridges)
-    cdef void cut_classes_multimap[UIntType](const Graph &graph, vector[vector[pair[size_t, size_t]]] &output)
-    cdef void cut_classes_sort[UIntType, SorterType](const Graph &graph, vector[vector[pair[size_t, size_t]]] &output)
-    cdef void cut_edges[UIntType](const Graph &graph, vector[pair[size_t, size_t]] &output)
-    cdef void count_components_dfs(const Graph &graph, size_t root, vector[Colour] &colours)
-    cdef size_t count_components(Graph &graph)
-
-
-cdef extern from "sorts.cpp":
-
-    # cdef cppclass BaseWrap[T]:
-    #     T& operator()(T &item)
-
-    cdef cppclass BucketSorter:
-        void operator()[T, Wrap](vector[T])
-
-    cdef cppclass RadixSorter:
-        void operator()[T, Wrap](vector[T])
-
-    cdef cppclass StdSorter:
-        void operator()[T, Wrap](vector[T])
+    cdef void BellmanFord(Graph &graph, size_t src, vector[int64_t] &output)
+    cdef void FloydWarshall(Graph &graph, vector[vector[int64_t]] &output)
