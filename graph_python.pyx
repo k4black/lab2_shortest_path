@@ -8,11 +8,11 @@ from libc.stddef cimport size_t
 from libcpp.set cimport set
 from libcpp.memory cimport shared_ptr
 from cython.operator cimport dereference
-from libc.stdint cimport uint32_t, uint64_t
+from libc.stdint cimport uint32_t, uint64_t, int32_t, int64_t
 
-from graph cimport Graph, BucketSorter, RadixSorter, StdSorter
-from graph cimport cut_classes_multimap as cut_classes_multimap_cpp, cut_classes_sort as cut_classes_sort_cpp, cut_edges as cut_edges_cpp, find_bridge as find_bridge_cpp
-from graph cimport GraphGenerator
+from graph cimport Graph, GraphGenerator
+from graph cimport BellmanFord as BellmanFord_cpp
+from graph cimport FloydWarshall as FloydWarshall_cpp
 
 
 cdef class PyGraph:
@@ -25,14 +25,26 @@ cdef class PyGraph:
     def reserve(self, num_of_nodes: int):
         self.graph.reserve(num_of_nodes)
 
-    def build(self, edges: typing.List[typing.Tuple[int, int]]):
-        self.graph.build(<vector[pair[size_t, size_t]]> edges)
+    def build(self, edges: typing.List[typing.List[int, int, int]]):
+        # TODO current C++ implementation needs vector of Edges
+        # To avoid this (unneeded) overhead, building here via set_neighbour directly
+#        self.graph.build(<vector[pair[size_t, size_t]]> edges)
+        for edge in edges:
+            self.graph.set_neighbour(edge[0], edge[1], edge[2])
 
-    def build(self, edges: typing.Set[typing.Tuple[int, int]]):
-        self.graph.build(<set[pair[size_t, size_t]]> edges)
+    def build(self, edges: typing.Set[typing.List[int, int, int]]):
+        # TODO current C++ implementation needs set of Edges
+        # To avoid this (unneeded) overhead, building here via set_neighbour directly
+#        self.graph.build(<set[pair[size_t, size_t]]> edges)
+        for edge in edges:
+            self.graph.set_neighbour(edge[0], edge[1], edge[2])
 
-    def build_directed(self, edges: typing.List[typing.Tuple[int, int]]):
-        self.graph.build_directed(edges)
+    def build_directed(self, edges: typing.List[typing.List[int, int, int]]):
+        # TODO current C++ implementation needs vector of Edges
+        # To avoid this (unneeded) overhead, building here via set_neighbour directly
+#        self.graph.build_directed(edges)vector
+        for edge in edges:
+            self.graph.set_neighbour_directed(edge[0], edge[1], edge[2])
 
     # TODO: accessors
 
@@ -42,17 +54,17 @@ cdef class PyGraph:
     def remove_neighbour_directed(self, node_index: int, neighbour_index: int):
         self.graph.remove_neighbour_directed(node_index, neighbour_index)
 
-    def set_neighbour(self, node_index: int, neighbour_index: int):
-        self.graph.set_neighbour(node_index, neighbour_index)
+    def set_neighbour(self, node_index: int, neighbour_index: int, weight: int):
+        self.graph.set_neighbour(node_index, neighbour_index, weight)
 
-    def set_neighbour_directed(self, node_index: int, neighbour_index: int):
-        self.graph.set_neighbour_directed(node_index, neighbour_index)
+    def set_neighbour_directed(self, node_index: int, neighbour_index: int, weight: int):
+        self.graph.set_neighbour_directed(node_index, neighbour_index, weight)
 
-    def add_neighbour(self, node_index: int, neighbour_index: int):
-        self.graph.add_neighbour(node_index, neighbour_index)
+    def add_neighbour(self, node_index: int, neighbour_index: int, weight: int):
+        self.graph.add_neighbour(node_index, neighbour_index, weight)
 
-    def add_neighbour_directed(self, node_index: int, neighbour_index: int):
-        self.graph.add_neighbour_directed(node_index, neighbour_index)
+    def add_neighbour_directed(self, node_index: int, neighbour_index: int, weight: int):
+        self.graph.add_neighbour_directed(node_index, neighbour_index, weight)
 
     def check_neighbour(self, node_index: int, neighbour_index: int) -> bool:
         return self.graph.check_neighbour(node_index, neighbour_index)
@@ -74,13 +86,14 @@ cdef class PyGraphGenerator:
     def __cinit__(self):
         self.graph_generator = GraphGenerator()
 
-    @staticmethod
-    def generate_tree_edges(graph: PyGraph, edges: typing.Dict[typing.Tuple[int, int]]):
-        GraphGenerator.generate_tree_edges(graph.graph, edges)
+    # TODO: didnt' implement, strange place to construct Edges, same as for Graph.build()
+#    @staticmethod
+#    def generate_tree_edges(graph: PyGraph, edges: typing.Dict[typing.Tuple[int, int]]):
+#        GraphGenerator.generate_tree_edges(graph.graph, edges)
 
-    @staticmethod
-    def generate_tree_edges(graph: PyGraph, edges: typing.List[typing.Tuple[int, int]]):
-        GraphGenerator.generate_tree_edges(graph.graph, edges)
+#    @staticmethod
+#    def generate_tree_edges(graph: PyGraph, edges: typing.List[typing.Tuple[int, int]]):
+#        GraphGenerator.generate_tree_edges(graph.graph, edges)
 
     @staticmethod
     def build_by_prob(graph: PyGraph, prob: float):
@@ -97,8 +110,8 @@ cdef class PyGraphGenerator:
 
 
 def BellmanFord(graph: PyGraph, src: int) -> typing.List[int]:
-    cdef vector[vector[int]] output
-    FloydWarshall(graph.graph, src, output)
+    cdef vector[int64_t] output
+    BellmanFord_cpp(graph.graph, src, output)
     out: typing.List[int] = []
     for dist in output:
         out.append(dist)
@@ -106,8 +119,8 @@ def BellmanFord(graph: PyGraph, src: int) -> typing.List[int]:
 
 
 def FloydWarshall(graph: PyGraph) -> typing.List[typing.List[int]]:
-    cdef vector[vector[int]] output
-    FloydWarshall(graph.graph, output)
+    cdef vector[int64_t] output
+    FloydWarshall_cpp(graph.graph, output)
     out: typing.List[typing.List[int]] = []
     for line in output:
         out.append([])

@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <set>
+#include <iostream>
 
 
 enum Colour {
@@ -93,20 +94,20 @@ public:
     void remove_neighbour_directed(size_t node_index, size_t neighbour_index) {
         matrix[node_index][neighbour_index] =  0;
     }
-
+    //TODO: weight is size_t?
     void set_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
         matrix[node_index][neighbour_index] = weight;
         matrix[neighbour_index][node_index] = weight;
     }
-
+    //TODO: weight is size_t?
     void set_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
         matrix[node_index][neighbour_index] = weight;
     }
-
+    //TODO: weight is size_t?
     void add_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
         set_neighbour(node_index, neighbour_index, weight);
     }
-
+    //TODO: weight is size_t?
     void add_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
         set_neighbour_directed(node_index, neighbour_index, weight);
     }
