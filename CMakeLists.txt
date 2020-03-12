@@ -11,6 +11,6 @@ add_executable(shortest main.cpp)
 # Testing
 ################################
 
-#add_executable(tests_sorts tests/tests_sorts.cpp)
-#add_executable(tests_graph tests/tests_graph.cpp)
-#add_executable(tests_auxiliary tests/tests_auxiliary.cpp)
+add_executable(tests_sorts tests/tests_sorts.cpp)
+add_executable(tests_graph tests/tests_graph.cpp)
+add_executable(tests_auxiliary tests/tests_auxiliary.cpp)

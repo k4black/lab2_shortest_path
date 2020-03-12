@@ -58,7 +58,7 @@ public:
 
         for (auto &line: matrix) {
             line.resize(num_of_nodes);
-            std::fill(line.begin(), line.end(), 0);
+            std::fill(line.begin(), line.end(), INT64_MAX);
         }
 
         adjacency.clear();

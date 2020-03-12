@@ -38,7 +38,8 @@ void Dijkstra(const Graph& graph, size_t src, std::vector<int64_t> &dist) {
         sptSet[current_node] = true;
 
         for (auto neib : graph[current_node]) {
-            if (dist[current_node] != INT_MAX && dist[current_node] + neib.second < dist[neib.first]) {
+            if (dist[current_node] != INT64_MAX && dist[current_node] + neib.second < dist[neib.first]) {
+//                std::cout << dist[neib.first] << " " << dist[current_node] << "+" << neib.second << '\n';
                 dist[neib.first] = dist[current_node] + neib.second;
             }
         }
@@ -105,6 +106,8 @@ void FloydWarshall(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
         for (auto &neib : graph[node]) {
             dist[node][neib.first] = neib.second;
         }
+
+        dist[node][node] = 0;
     }
 
     for (size_t k : graph) {
@@ -122,19 +125,19 @@ void FloydWarshall(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
     }
 
 
-    // Print the shortest distance matrix
-    std::cout<<"The following matrix shows the shortest distances between every pair of vertices \n";
-
-    for (int i = 0; i < graph.size(); i++) {
-        for (int j = 0; j < graph.size(); j++) {
-            if (dist[i][j] == INT64_MAX) {
-                std::cout << "INF" << "     ";
-            } else {
-                std::cout << dist[i][j] << "     ";
-            }
-        }
-        std::cout << std::endl;
-    }
+//    // Print the shortest distance matrix
+//    std::cout<<"The following matrix shows the shortest distances between every pair of vertices \n";
+//
+//    for (int i = 0; i < graph.size(); i++) {
+//        for (int j = 0; j < graph.size(); j++) {
+//            if (dist[i][j] == INT64_MAX) {
+//                std::cout << "INF" << "     ";
+//            } else {
+//                std::cout << dist[i][j] << "     ";
+//            }
+//        }
+//        std::cout << std::endl;
+//    }
 }
 
 
