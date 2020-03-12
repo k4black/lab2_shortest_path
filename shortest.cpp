@@ -1,36 +1,72 @@
 
 #include "graph.cpp"
 
+#include <set>
+#include <algorithm>
+#include <utility>
 
-void BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &output) {
-    std::vector<Edge> edges;
 
-    // TODO: Think do better
+int64_t MinDistance(const Graph& graph, std::vector<int64_t> &dist, std::vector<bool> &sptSet)  {
+    // Initialize min value
+    int64_t min = INT64_MAX;
+    size_t min_index = 0;
+
     for (size_t node : graph) {
-        size_t j = 0;
-        for (auto weight : graph[node]) {
-            if (weight != 0) {
-                edges.emplace_back(node, j, weight);
-            }
-            ++j;
+        if (sptSet[node] == false && dist[node] <= min) {
+            min = dist[node];
+            min_index = node;
         }
     }
 
-    for (auto &edge : edges) {
-        std::cout << edge.first << "->" << edge.second << " $" << edge.weight << std::endl;
+    return min_index;
+}
+
+
+void Dijkstra(const Graph& graph, size_t src, std::vector<int64_t> &dist) {
+    dist.clear();
+    dist.resize(graph.size());
+    std::fill(dist.begin(), dist.end(), INT64_MAX);
+    dist[src] = 0;
+
+    std::vector<bool> sptSet(graph.size(), false);  // TODO: Heap
+
+
+    // Find shortest path for all vertices
+    for (size_t count = 0; count < graph.size() - 1; count++) {
+        size_t current_node = MinDistance(graph, dist, sptSet);
+
+        sptSet[current_node] = true;
+
+        for (auto neib : graph[current_node]) {
+            if (dist[current_node] != INT_MAX && dist[current_node] + neib.second < dist[neib.first]) {
+                dist[neib.first] = dist[current_node] + neib.second;
+            }
+        }
     }
+}
 
-    // Initialize distance of all vertices as 0.
-    std::vector<int64_t> dis(graph.size(), INT64_MAX);
 
-    // initialize distance of source as 0
-    dis[src] = 0;
+
+bool BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &dist) {
+    // Return true if can be solved
+    dist.clear();
+    dist.resize(graph.size());
+    std::fill(dist.begin(), dist.end(), INT64_MAX);
+    dist[src] = 0;
+
+
+    std::vector<Edge> edges;
+    for (size_t node : graph) {
+        for (auto &neib : graph[node]) {
+            edges.emplace_back(node, neib.first, neib.second);
+        }
+    }
 
 
     for (int i = 0; i < graph.size() - 1; i++) {
         for (auto &edge : edges) {
-            if (dis[edge.first] + edge.weight < dis[edge.second]) {
-                dis[edge.second] = dis[edge.first] + edge.weight;
+            if (dist[edge.first] + edge.weight < dist[edge.second]) {
+                dist[edge.second] = dist[edge.first] + edge.weight;
             }
         }
     }
@@ -41,37 +77,35 @@ void BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &output) {
         size_t y = edge.second;
         int32_t weight = edge.weight;
 
-        if (dis[x] != INT64_MAX && dis[x] + weight < dis[y])
+        if (dist[x] != INT64_MAX && dist[x] + weight < dist[y]) {
             std::cout << "Graph contains negative weight cycle" << std::endl;
+            return false;
+        }
     }
 
     std::cout << "Vertex Distance from Source" << std::endl;
     for (int i = 0; i < graph.size(); i++) {
-        std::cout << i << "\t\t" << dis[i] << std::endl;
+        std::cout << i << "\t\t" << dist[i] << std::endl;
     }
+
+    return true;
 }
 
 
 
 
 
-void FloydWarshall(Graph &graph, std::vector<int64_t> &output) {
-    std::vector<std::vector<int64_t>> dist(graph.size(), std::vector<int64_t>(graph.size(), 0));
-
-
-    // TODO: Think do better
+void FloydWarshall(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
+    dist.clear();
+    dist.resize(graph.size());
     for (size_t node : graph) {
-        size_t j = 0;
-        for (auto weight : graph[node]) {
-            if (weight == 0) {
-                dist[node][j] = INT64_MAX;
-            } else {
-                dist[node][j] = weight;
-            }
-            ++j;
+        dist[node].resize(graph.size());
+        std::fill(dist[node].begin(), dist[node].end(), INT64_MAX);
+
+        for (auto &neib : graph[node]) {
+            dist[node][neib.first] = neib.second;
         }
     }
-
 
     for (size_t k : graph) {
         for (size_t i : graph) {
@@ -103,3 +137,57 @@ void FloydWarshall(Graph &graph, std::vector<int64_t> &output) {
     }
 }
 
+
+
+
+
+bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
+    dist.clear();
+    dist.resize(graph.size());
+
+    // Run belman on dummy graph
+    Graph graph_prime(graph.size() + 1);
+
+    std::vector<Edge> edges;
+    for (size_t node : graph) {
+        for (auto &neib : graph[node]) {
+            edges.emplace_back(node, neib.first, neib.second);
+        }
+
+        edges.emplace_back(graph.size(), node, 0);  // Dummy node
+    }
+
+    graph_prime.build_directed(edges);
+
+
+    std::vector<int64_t> belman_dist;
+
+    if (!BellmanFord(graph_prime, graph.size(), belman_dist)) {
+        std::cout << "Graph contains negative weight cycle" << std::endl;  // TODO: raise error
+        return false;
+    }
+
+    // Update weights
+    Graph graph_updated(graph.size());
+    std::vector<Edge> edges_updated;
+    for (size_t node : graph) {
+        for (auto &neib : graph[node]) {
+            if (neib.second != 0) {
+                edges.emplace_back(node, neib.first, neib.second + belman_dist[node] - belman_dist[neib.first]);
+            } else {
+                edges.emplace_back(node, neib.first, 0);
+            }
+        }
+    }
+
+    graph_updated.build_directed(edges);
+
+
+    // Run Dijkstra
+    for (size_t node : graph) {
+        Dijkstra(graph_updated, node, dist[node]);
+    }
+
+
+    return true;
+}

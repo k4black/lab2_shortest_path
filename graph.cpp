@@ -35,10 +35,12 @@ public:
 };
 
 
+
 class Graph {
 private:
     std::vector<std::vector<size_t>> matrix;  // matrix
-//    std::vector<std::vector<size_t>> adjacency;  // adjacency list
+    std::vector<std::vector<std::pair<size_t, int32_t>>> adjacency;  // adjacency list with weight
+
     size_t num_of_nodes = 0;
 
 public:
@@ -58,6 +60,9 @@ public:
             line.resize(num_of_nodes);
             std::fill(line.begin(), line.end(), 0);
         }
+
+        adjacency.clear();
+        adjacency.resize(num_of_nodes);
     }
 
     void build(const std::vector<Edge> &edges) {
@@ -78,55 +83,75 @@ public:
         }
     }
 
-    [[nodiscard]] const std::vector<size_t>& operator[](size_t node_index) const {
-        return matrix[node_index];
+    [[nodiscard]] const std::vector<std::pair<size_t, int32_t>>& operator[](size_t node_index) const {
+        return adjacency[node_index];
     }
 
-    [[nodiscard]] const std::vector<size_t>&get_neighbours(size_t node_index) const {
-        return matrix[node_index];
+    [[nodiscard]] const std::vector<std::pair<size_t, int32_t>>&get_neighbours(size_t node_index) const {
+        return adjacency[node_index];
     }
+
 
     void remove_neighbour(size_t node_index, size_t neighbour_index) {
-        matrix[node_index][neighbour_index] = 0;
-        matrix[neighbour_index][node_index] = 0;
+        remove_neighbour_directed(node_index, neighbour_index);
+        remove_neighbour_directed(neighbour_index, node_index);
     }
 
     void remove_neighbour_directed(size_t node_index, size_t neighbour_index) {
-        matrix[node_index][neighbour_index] =  0;
+        matrix[node_index][neighbour_index] = INT64_MAX;
+
+        auto position = adjacency[node_index].begin();
+        for (; position != adjacency[node_index].end(); ++position) {
+            if (position->first == neighbour_index) {
+                break;
+            }
+        }
+        if (position != adjacency[node_index].end()) {  // == adjacency.end() means the element was not found
+            adjacency[node_index].erase(position);
+        }
     }
-    //TODO: weight is size_t?
-    void set_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
+
+    void set_neighbour(size_t node_index, size_t neighbour_index, int32_t weight) {
+        set_neighbour_directed(node_index, neighbour_index, weight);
+        set_neighbour_directed(neighbour_index, node_index, weight);
+    }
+
+    void set_neighbour_directed(size_t node_index, size_t neighbour_index, int32_t weight) {
         matrix[node_index][neighbour_index] = weight;
-        matrix[neighbour_index][node_index] = weight;
+
+        auto position = adjacency[node_index].begin();
+        for (; position != adjacency[node_index].end(); ++position) {
+            if (position->first == neighbour_index) {
+                break;
+            }
+        }
+        if (position == adjacency[node_index].end()) {  // == adjacency.end() means the element was not found
+            adjacency[node_index].emplace_back(neighbour_index, weight);
+        }
     }
-    //TODO: weight is size_t?
-    void set_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
-        matrix[node_index][neighbour_index] = weight;
-    }
-    //TODO: weight is size_t?
-    void add_neighbour(size_t node_index, size_t neighbour_index, size_t weight) {
+
+    void add_neighbour(size_t node_index, size_t neighbour_index, int32_t weight) {
         set_neighbour(node_index, neighbour_index, weight);
     }
-    //TODO: weight is size_t?
+
     void add_neighbour_directed(size_t node_index, size_t neighbour_index, size_t weight) {
         set_neighbour_directed(node_index, neighbour_index, weight);
     }
 
     [[nodiscard]] bool check_neighbour(size_t node_index, size_t neighbour_index) const {
-        return matrix[node_index][neighbour_index] != 0;
+        return matrix[node_index][neighbour_index] != INT64_MAX;
     }
 
     void revert_edge(size_t node_index, size_t neighbour_index) {
         std::swap(matrix[node_index][neighbour_index], matrix[neighbour_index][node_index]);
+
+        remove_neighbour(node_index, neighbour_index);
+        set_neighbour_directed(node_index, neighbour_index, matrix[node_index][neighbour_index]);
+        set_neighbour_directed(neighbour_index, node_index, matrix[neighbour_index][node_index]);
     }
 
     [[nodiscard]] size_t node_degree(size_t node_index) const {
-        size_t counter = 0;
-        for (auto node : matrix[node_index]) {
-            if (node != 0) counter++;
-        }
-
-        return counter;
+        return adjacency[node_index].size();
     }
 
 
