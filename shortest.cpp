@@ -79,14 +79,8 @@ bool BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &dist) {
         int32_t weight = edge.weight;
 
         if (dist[x] != INT64_MAX && dist[x] + weight < dist[y]) {
-            std::cout << "Graph contains negative weight cycle" << std::endl;
-            return false;
+            return false;  // TODO Raise error
         }
-    }
-
-    std::cout << "Vertex Distance from Source" << std::endl;
-    for (int i = 0; i < graph.size(); i++) {
-        std::cout << i << "\t\t" << dist[i] << std::endl;
     }
 
     return true;
@@ -123,21 +117,6 @@ void FloydWarshall(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
             }
         }
     }
-
-
-//    // Print the shortest distance matrix
-//    std::cout<<"The following matrix shows the shortest distances between every pair of vertices \n";
-//
-//    for (int i = 0; i < graph.size(); i++) {
-//        for (int j = 0; j < graph.size(); j++) {
-//            if (dist[i][j] == INT64_MAX) {
-//                std::cout << "INF" << "     ";
-//            } else {
-//                std::cout << dist[i][j] << "     ";
-//            }
-//        }
-//        std::cout << std::endl;
-//    }
 }
 
 

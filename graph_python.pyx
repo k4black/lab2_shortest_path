@@ -109,6 +109,15 @@ cdef class PyGraphGenerator:
 
 
 
+def Dijkstra(graph: PyGraph, src: int) -> typing.List[int]:
+    cdef vector[int64_t] output
+    BellmanFord_cpp(graph.graph, src, output)
+    out: typing.List[int] = []
+    for dist in output:
+        out.append(dist)
+    return out
+
+
 def BellmanFord(graph: PyGraph, src: int) -> typing.List[int]:
     cdef vector[int64_t] output
     BellmanFord_cpp(graph.graph, src, output)
@@ -119,8 +128,19 @@ def BellmanFord(graph: PyGraph, src: int) -> typing.List[int]:
 
 
 def FloydWarshall(graph: PyGraph) -> typing.List[typing.List[int]]:
-    cdef vector[int64_t] output
+    cdef vector[vector[int64_t]] output
     FloydWarshall_cpp(graph.graph, output)
+    out: typing.List[typing.List[int]] = []
+    for line in output:
+        out.append([])
+        for dist in line:
+            out[-1].append(dist)
+    return out
+
+
+def Johnson(graph: PyGraph) -> typing.List[typing.List[int]]:
+    cdef vector[vector[int64_t]] output
+    Johnson_cpp(graph.graph, output)
     out: typing.List[typing.List[int]] = []
     for line in output:
         out.append([])

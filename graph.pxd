@@ -76,5 +76,7 @@ cdef extern from "graph.cpp":
 
 cdef extern from "shortest.cpp":
 
+    cdef void Dijkstra(Graph &graph, size_t src, vector[int64_t] &output)
     cdef void BellmanFord(Graph &graph, size_t src, vector[int64_t] &output)
-    cdef void FloydWarshall(Graph &graph, vector[int64_t] &output)
+    cdef void FloydWarshall(Graph &graph, vector[vector[int64_t]] &output)
+    cdef void Johnson(Graph &graph, vector[vector[int64_t]] &output)

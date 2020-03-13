@@ -66,12 +66,30 @@ public:
     }
 
     void build(const std::vector<Edge> &edges) {
+        for (auto &vec : adjacency) {
+            vec.clear();
+        }
+        for (auto &vec : matrix) {
+            for (auto &i : vec) {
+                i = INT64_MAX;
+            }
+        }
+
         for (auto &edge : edges) {
             set_neighbour(edge.first, edge.second, edge.weight);
         }
     }
 
     void build(const std::set<Edge> &edges) {
+        for (auto &vec : adjacency) {
+            vec.clear();
+        }
+        for (auto &vec : matrix) {
+            for (auto &i : vec) {
+                i = INT64_MAX;
+            }
+        }
+
         for (auto &edge : edges) {
             set_neighbour(edge.first, edge.second, edge.weight);
         }
@@ -271,7 +289,7 @@ public:
 //                std::pair<size_t, size_t> temp_edge(i, j);
 
                 if (gen() % prob == 0) {
-                    int32_t weight = 1;
+                    int32_t weight = 1;  // TODO: WEIGHT!!!
 
                     edges.emplace(i, j, weight);
                 }
