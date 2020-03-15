@@ -128,18 +128,11 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
     dist.resize(graph.size());
 
     // Run belman on dummy graph
-    Graph graph_prime(graph.size() + 1);
-
-    std::vector<Edge> edges;
-    for (size_t node : graph) {
-        for (auto &neib : graph[node]) {
-            edges.emplace_back(node, neib.first, neib.second);
-        }
-
-        edges.emplace_back(graph.size(), node, 0);  // Dummy node
+    Graph graph_prime(graph);
+    graph_prime.add_node();  // Dummy node
+    for (size_t node = 0; node < graph_prime.size() - 1; ++node) {
+        graph_prime.set_neighbour_directed(graph.size(), node, 0);  // Dummy node
     }
-
-    graph_prime.build_directed(edges);
 
 
     std::vector<int64_t> belman_dist;
@@ -149,7 +142,7 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
         return false;
     }
 
-    // Update weights
+    // Update weights  TODO: OPtimize to copy constructor
     Graph graph_updated(graph.size());
     std::vector<Edge> edges_updated;
     for (size_t node : graph) {
