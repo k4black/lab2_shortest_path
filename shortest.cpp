@@ -66,7 +66,7 @@ bool BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &dist) {
 
     for (int i = 0; i < graph.size() - 1; i++) {
         for (auto &edge : edges) {
-            if (dist[edge.first] + edge.weight < dist[edge.second]) {
+            if (dist[edge.first] != INT64_MAX && edge.weight != INT32_MAX && dist[edge.first] + edge.weight < dist[edge.second]) {
                 dist[edge.second] = dist[edge.first] + edge.weight;
             }
         }
@@ -78,7 +78,7 @@ bool BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &dist) {
         size_t y = edge.second;
         int32_t weight = edge.weight;
 
-        if (dist[x] != INT64_MAX && dist[x] + weight < dist[y]) {
+        if (dist[x] != INT64_MAX && weight != INT32_MAX && dist[x] + weight < dist[y]) {
             return false;  // TODO Raise error
         }
     }
@@ -155,14 +155,14 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
     for (size_t node : graph) {
         for (auto &neib : graph[node]) {
             if (neib.second != 0) {
-                edges.emplace_back(node, neib.first, neib.second + belman_dist[node] - belman_dist[neib.first]);
+                edges_updated.emplace_back(node, neib.first, neib.second + belman_dist[node] - belman_dist[neib.first]);
             } else {
-                edges.emplace_back(node, neib.first, 0);
+                edges_updated.emplace_back(node, neib.first, 0);
             }
         }
     }
 
-    graph_updated.build_directed(edges);
+    graph_updated.build_directed(edges_updated);
 
 
     // Run Dijkstra
