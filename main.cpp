@@ -27,6 +27,9 @@ int main() {
 
     Johnson(graph, output);
 
+    int64_t result{};
+    A_Star(graph, 0, 2, result, &simple_heuristic);
+
 
     return 0;
 }

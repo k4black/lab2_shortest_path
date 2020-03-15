@@ -38,7 +38,7 @@ public:
 
 class Graph {
 private:
-    std::vector<std::vector<size_t>> matrix;  // matrix
+    std::vector<std::vector<int32_t>> matrix;  // matrix
     std::vector<std::vector<std::pair<size_t, int32_t>>> adjacency;  // adjacency list with weight
 
     size_t num_of_nodes = 0;
