@@ -33,6 +33,30 @@ TEST_CASE("Testing Graph", "[graph]") {
         REQUIRE(!graph.check_neighbour(0, 5));
     }
 
+    SECTION("Copy Constructor") {
+        graph::Graph graph(4);
+        std::vector<graph::Edge> edges = { { 0, 3, 0 }, { 2, 3, 1 },
+                                    { 1, 2, 3 }, { 0, 1, 5 } };
+        graph.build(edges);
+
+
+        graph::Graph new_graph(graph);
+
+        REQUIRE(new_graph.size() == 4);
+
+        new_graph.add_node();
+
+        REQUIRE(graph.size() == 4);
+        REQUIRE(new_graph.size() == 5);
+
+        new_graph.set_neighbour_directed(3, 4, 4);
+        graph.set_neighbour_directed(3, 3, 3);  // Test not influenced
+
+        REQUIRE(graph.get_weight(0, 3) == new_graph.get_weight(0, 3));
+        REQUIRE(graph.get_weight(3, 3) != new_graph.get_weight(3, 3));  // Test not influenced
+        REQUIRE(new_graph.get_weight(3, 4) == 4);
+    }
+
     SECTION("Iterator") {
         graph::Graph graph(10);
 

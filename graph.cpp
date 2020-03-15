@@ -46,8 +46,21 @@ private:
 public:
     Graph() = default;
 
+    Graph(const Graph& graph) : matrix(graph.matrix), adjacency(graph.adjacency), num_of_nodes{graph.num_of_nodes} {
+    }
+
     explicit Graph(size_t num_of_nodes) {
         reserve(num_of_nodes);
+    }
+
+    void add_node() {
+        ++num_of_nodes;
+        adjacency.emplace_back();
+        matrix.emplace_back(num_of_nodes-1, INT32_MAX);
+
+        for (auto &vect : matrix) {
+            vect.push_back(INT32_MAX);
+        }
     }
 
     void reserve(size_t num_of_nodes) {
@@ -58,7 +71,7 @@ public:
 
         for (auto &line: matrix) {
             line.resize(num_of_nodes);
-            std::fill(line.begin(), line.end(), INT64_MAX);
+            std::fill(line.begin(), line.end(), INT32_MAX);
         }
 
         adjacency.clear();
@@ -71,7 +84,7 @@ public:
         }
         for (auto &vec : matrix) {
             for (auto &i : vec) {
-                i = INT64_MAX;
+                i = INT32_MAX;
             }
         }
 
@@ -86,7 +99,7 @@ public:
         }
         for (auto &vec : matrix) {
             for (auto &i : vec) {
-                i = INT64_MAX;
+                i = INT32_MAX;
             }
         }
 
@@ -116,7 +129,7 @@ public:
     }
 
     void remove_neighbour_directed(size_t node_index, size_t neighbour_index) {
-        matrix[node_index][neighbour_index] = INT64_MAX;
+        matrix[node_index][neighbour_index] = INT32_MAX;
 
         auto position = adjacency[node_index].begin();
         for (; position != adjacency[node_index].end(); ++position) {
@@ -157,8 +170,13 @@ public:
     }
 
     [[nodiscard]] bool check_neighbour(size_t node_index, size_t neighbour_index) const {
-        return matrix[node_index][neighbour_index] != INT64_MAX;
+        return matrix[node_index][neighbour_index] != INT32_MAX;
     }
+
+    [[nodiscard]] int32_t get_weight(size_t node_index, size_t neighbour_index) {
+        return matrix[node_index][neighbour_index];
+    }
+
 
     void revert_edge(size_t node_index, size_t neighbour_index) {
         std::swap(matrix[node_index][neighbour_index], matrix[neighbour_index][node_index]);
