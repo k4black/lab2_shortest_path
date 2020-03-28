@@ -4,6 +4,8 @@
 #include <set>
 #include <algorithm>
 #include <utility>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_expression.hpp>
 
 
 int64_t MinDistance(const Graph& graph, std::vector<int64_t> &dist, std::vector<bool> &sptSet)  {
@@ -71,7 +73,7 @@ bool BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &dist) {
     }
 
     // relaxation of all edges, N-1 times
-    for (int i = 0; i < graph.size() - 1; i++) {
+    for (size_t i = 0; i < graph.size() - 1; ++i) {
         for (auto &edge : edges) {
             if (dist[edge.first] != INT64_MAX && edge.weight != INT32_MAX && dist[edge.first] + edge.weight < dist[edge.second]) {
                 dist[edge.second] = dist[edge.first] + edge.weight;
@@ -131,13 +133,13 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
     dist.clear();
     dist.resize(graph.size());
 
-    // Run belman on dummy graph
+    // Running Bellman-Ford algorithm on the augmented graph
     Graph graph_prime(graph);
-    graph_prime.add_node();  // Dummy node
+    graph_prime.add_node();  // Augmenting node
+    // Augmenting zero-weight edges
     for (size_t node = 0; node < graph_prime.size() - 1; ++node) {
-        graph_prime.set_neighbour_directed(graph.size(), node, 0);  // Dummy node
+        graph_prime.set_neighbour_directed(graph.size(), node, 0);
     }
-
 
     std::vector<int64_t> belman_dist;
 
@@ -146,7 +148,8 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
         return false;
     }
 
-    // Update weights  TODO: OPtimize to copy constructor
+    // TODO: Optimize to copy constructor
+    // Updating weights of the initial graph with Bellman-Ford results
     Graph graph_updated(graph.size());
     std::vector<Edge> edges_updated;
     for (size_t node : graph) {
@@ -161,12 +164,10 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
 
     graph_updated.build_directed(edges_updated);
 
-
-    // Run Dijkstra
+    // Running Dijkstra on the updated graph
     for (size_t node : graph) {
         Dijkstra(graph_updated, node, dist[node]);
     }
-
 
     return true;
 }
@@ -192,7 +193,7 @@ void reconstruct_path(std::unordered_map<size_t, size_t> &came_from, size_t dest
 
 
 // TODO: modify for to-all paths
-void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::function<int64_t (size_t)> heuristics) {
+void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::function<int64_t (size_t)> heuristics = simple_heuristic) {
     // heap containing the nodes to be visited
     std::vector<std::pair<int32_t , size_t >> open_set {{0, src}};
     std::make_heap(open_set.begin(), open_set.end(), std::greater<>{});
@@ -248,6 +249,65 @@ void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::functio
                     std::make_heap(open_set.begin(), open_set.end(), std::greater<>{});
                 }
             }
+        }
+    }
+}
+
+//TODO: std::functional to pass custom matrix multiplication functions
+//TODO: int32_t -> {0; 1}, as naive Seidel is for unweighted graph only
+boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::matrix<int64_t> &A) {
+
+    bool ret = true;
+    for (size_t i = 0; i < A.size1(); ++i) {
+        for (size_t j = 0; j < A.size1(); ++j) {
+            if (A(i, j) == 0 && i != j) {
+                ret = false;
+                break;
+            }
+        }
+        if (!ret) {break;}
+    }
+    if (ret) {return A;}
+
+    boost::numeric::ublas::matrix<int32_t> Z = boost::numeric::ublas::prod(A, A);  //TODO: dedicated function for matrix exponentiation in uBLAS/in general?
+    boost::numeric::ublas::matrix<int64_t> B {A.size1(), A.size1()};  //TODO: dedicated class for square matrices in uBLAS?
+    for (size_t i = 0; i < A.size1(); ++i) {
+        for (size_t j = 0; j < A.size1(); ++j) {
+            if ((A(i, j) == 1 || Z(i, j) > 0) && i != j) {B(i, j) = 1;} else {B(i, j) = 0;}
+        }
+    }
+    auto T = Seidel_internal(B);
+    std::vector<int64_t> degree{};
+    degree.reserve(A.size1());
+    for (size_t i = 0; i < A.size1(); ++i) {
+        //TODO: better sum of all elements in a row?
+        for (size_t j = 0; j < A.size1(); ++j) {
+            degree[i] += A(i, j);
+        }
+    }
+    auto X = boost::numeric::ublas::prod(T, A);
+    boost::numeric::ublas::matrix<int32_t> D {A.size1(), A.size1()};
+    for (size_t i = 0; i < A.size1(); ++i) {
+        for (size_t j = 0; j < A.size1(); ++j) {
+            if (X(i, j) >= T(i, j)*degree[j]) {D(i, j) = 2*T(i, j);} else {D(i, j) = 2*T(i, j)-1;}
+        }
+    }
+    return D;
+}
+
+//TODO: std::functional to pass custom matrix multiplication functions
+//TODO: int32_t -> {0; 1}, as naive Seidel is for unweighted graph only
+void Seidel(const Graph &graph, std::vector<std::vector<int64_t>> &output) {
+    boost::numeric::ublas::matrix<int64_t> A {graph.size(), graph.size()};
+    for (size_t i = 0; i < graph.size(); ++i) {
+        for (size_t j = 0; j < graph.size(); ++j) {
+            A(i, j) = graph.get_matrix()[i][j];
+        }
+    }
+    auto ret = Seidel_internal(A);
+    for (size_t i = 0; i < A.size1(); ++i) {
+        for (size_t j = 0; j < A.size1(); ++j) {
+            output[i][j] = ret(i, j);
         }
     }
 }

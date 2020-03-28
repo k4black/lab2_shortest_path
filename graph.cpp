@@ -11,6 +11,8 @@
 #include <set>
 #include <iostream>
 
+#include <boost/numeric/ublas/matrix.hpp>
+
 
 enum Colour {
     BLACK, GREY, WHITE
@@ -30,7 +32,7 @@ public:
     }
 
     bool operator< (const Edge &a) const {
-        return this->first < a.first || this->first == a.first && this->second < a.second;
+        return this->first < a.first || (this->first == a.first && this->second < a.second);
     }
 };
 
@@ -122,6 +124,13 @@ public:
         return adjacency[node_index];
     }
 
+    [[nodiscard]] const std::vector<std::vector<int32_t>> &get_matrix() {
+        return this->matrix;
+    }
+
+    [[nodiscard]] const std::vector<std::vector<int32_t>> &get_matrix() const {
+        return this->matrix;
+    }
 
     void remove_neighbour(size_t node_index, size_t neighbour_index) {
         remove_neighbour_directed(node_index, neighbour_index);
@@ -176,7 +185,6 @@ public:
     [[nodiscard]] int32_t get_weight(size_t node_index, size_t neighbour_index) {
         return matrix[node_index][neighbour_index];
     }
-
 
     void revert_edge(size_t node_index, size_t neighbour_index) {
         std::swap(matrix[node_index][neighbour_index], matrix[neighbour_index][node_index]);

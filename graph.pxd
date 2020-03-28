@@ -80,3 +80,5 @@ cdef extern from "shortest.cpp":
     cdef void BellmanFord(Graph &graph, size_t src, vector[int64_t] &output)
     cdef void FloydWarshall(Graph &graph, vector[vector[int64_t]] &output)
     cdef void Johnson(Graph &graph, vector[vector[int64_t]] &output)
+#    cdef void A_Star(Graph &graph, size_t src, size_t dest, )
+    cdef void Seidel(Graph &graph, vector[vector[int64_t]] &output)
