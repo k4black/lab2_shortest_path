@@ -81,10 +81,11 @@ cdef extern from "graph.cpp":
 cdef extern from "shortest.cpp":
 
     cdef void Dijkstra(Graph &graph, size_t src, vector[int64_t] &output)
-    cdef void DijkstraHeap(Graph &graph, size_t src, vector[int64_t] &output)
+    cdef void DijkstraSet(Graph &graph, size_t src, vector[int64_t] &output)
+    cdef void BiDijkstra(Graph &graph, size_t src, size_t target)
     cdef void BellmanFord(Graph &graph, size_t src, vector[int64_t] &output)
     cdef void FloydWarshall(Graph &graph, vector[vector[int64_t]] &output)
     cdef void Johnson(Graph &graph, vector[vector[int64_t]] &output)
-    cdef void JohnsonHeap(Graph &graph, vector[vector[int64_t]] &output)
+    cdef void JohnsonSet(Graph &graph, vector[vector[int64_t]] &output)
     cdef void A_Star(Graph &graph, size_t src, size_t dest, vector[int32_t] &heur, vector[size_t] &output)
     cdef void Seidel(Graph &graph, vector[vector[int64_t]] &lengths, vector[vector[size_t]] &preds, bool reconstruct)

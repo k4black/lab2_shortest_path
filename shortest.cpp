@@ -7,6 +7,7 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <cmath>
 #include <random>
+#include <vector>
 #include <boost/numeric/ublas/matrix_expression.hpp>
 #include <boost/numeric/ublas/operation.hpp>
 #include <boost/numeric/ublas/operation_blocked.hpp>
@@ -58,6 +59,86 @@ void Dijkstra(const Graph& graph, size_t src, std::vector<int64_t> &dist) {
         }
     }
 }
+
+
+
+void DijkstraSet(const Graph &graph, size_t src, std::vector<int64_t> &dist) {
+    dist.clear();
+    dist.resize(graph.size());
+    std::fill(dist.begin(), dist.end(), INT64_MAX);
+    dist[src] = 0;
+
+    std::set< std::pair<int64_t, size_t>> setds;
+    setds.emplace(0, src);
+
+
+    // Find shortest path for all vertices
+    for (size_t count = 0; count < graph.size() - 1; count++) {
+        auto current_state = *(setds.begin());
+        setds.erase(setds.begin());
+        size_t current_node = current_state.second;
+        int64_t сurrent_dist = current_state.first;
+
+        for (const auto &i : graph[current_node]){
+            // Get vertex label and weight of current adjacent of u.
+            size_t v = i.first;
+            int64_t weight = i.second;
+
+            //  If there is shorter path to v through u.
+            if (сurrent_dist != INT64_MAX && dist[v] > сurrent_dist + weight && weight != INT32_MAX) {
+                if (dist[v] != INT64_MAX)
+                    setds.erase(setds.find(std::make_pair(dist[v], v)));
+
+                // Updating distance of v
+                dist[v] = сurrent_dist + weight;
+                setds.insert(std::make_pair(dist[v], v));
+            }
+        }
+    }
+}
+
+
+
+int64_t BiDijkstra(const Graph &graph, size_t v, size_t w) {
+    std::vector<bool> visited_v(graph.size(), false);
+    std::vector<bool> visited_w(graph.size(), false);
+    std::vector<int64_t> dist_v(graph.size(), INT64_MAX);
+    std::vector<int64_t> dist_w(graph.size(), INT64_MAX);
+
+    dist_v[v] = 0;
+    dist_w[w] = 0;
+
+    // Find shortest path for all vertices
+    for (size_t count = 0; count < graph.size() - 1; count++) {
+        size_t current_node_v = ChooseMinDistanceSearch(graph, dist_v, visited_v);
+        size_t current_node_w = ChooseMinDistanceSearch(graph, dist_w, visited_w);
+
+        if (dist_v[current_node_v] != INT64_MAX)
+            for (auto node : graph[current_node_v]) {
+                if (dist_v[current_node_v] != INT64_MAX && node.second != INT32_MAX && dist_v[current_node_v] + node.second < dist_v[node.first]) {
+                    dist_v[node.first] = dist_v[current_node_v] + node.second;
+                }
+            }
+
+        if (dist_w[current_node_w] != INT64_MAX)
+            for (auto node : graph[current_node_w]) {
+                if (dist_w[current_node_w] != INT64_MAX && node.second != INT32_MAX && dist_w[current_node_w] + node.second < dist_w[node.first]) {
+                    dist_w[node.first] = dist_w[current_node_w] + node.second;
+                }
+            }
+
+        if (visited_w[current_node_v] && visited_v[current_node_v]) {
+            return dist_w[current_node_v] + dist_v[current_node_v];
+        }
+        if (visited_w[current_node_w] && visited_v[current_node_w]) {
+            return dist_w[current_node_w] + dist_v[current_node_w];
+        }
+
+    }
+
+    return dist_w[v];
+}
+
 
 
 bool BellmanFord(Graph &graph, size_t src, std::vector<int64_t> &dist) {
@@ -132,7 +213,7 @@ void FloydWarshall(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
 }
 
 
-bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
+bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist, bool useDijkstraSet=true) {
     /// Solves all-pairs shortest-path problem
     dist.clear();
     dist.resize(graph.size());
@@ -170,7 +251,11 @@ bool Johnson(Graph &graph, std::vector<std::vector<int64_t>> &dist) {
 
     // Running Dijkstra on the updated graph
     for (size_t node : graph) {
-        Dijkstra(graph_updated, node, dist[node]);
+        if (useDijkstraSet) {
+            DijkstraSet(graph_updated, node, dist[node]);
+        } else {
+            Dijkstra(graph_updated, node, dist[node]);
+        }
     }
 
     return true;
