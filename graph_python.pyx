@@ -213,16 +213,24 @@ def JohnsonSet(graph: PyGraph) -> typing.List[typing.List[int]]:
     return out
 
 # TODO: return float from heuristics?
-def A_star(graph: PyGraph, src: int, dest: int, heuristics: typing.Callable[[int], int]) -> typing.List[int]:
+def A_star(graph: PyGraph, src: int, dest: int, heuristics: typing.Callable[[int], int], reconstruct: bool = False) -> typing.Tuple[int, typing.Optional[typing.List[int]]]:
     cdef vector[int32_t] heur
     for i in range(len(graph)):
         heur.push_back(heuristics(i))
     cdef vector[size_t] output
-    A_Star_cpp(graph.graph, src, dest, heur, output)
-    out: typing.List[int] = []
-    for vertex in output:
-        out.append(vertex)
-    return out
+    cdef int64_t length_cpp = -1
+#    print('check')
+    A_Star_cpp(graph.graph, src, dest, heur, length_cpp, output, reconstruct)
+    length: int = length_cpp
+#    print('check')
+    if reconstruct:
+#        print('check')
+        out: typing.List[int] = []
+        for vertex in output:
+            out.append(vertex)
+        return length, out
+    else:
+        return length, None
 
 def Seidel(graph: PyGraph, reconstruct: bool = False) -> typing.Tuple[typing.List[typing.List[int]], typing.List[typing.List[int]]]:
     cdef vector[vector[int64_t]] lengths_cpp

@@ -73,11 +73,11 @@ void DijkstraSet(const Graph &graph, size_t src, std::vector<int64_t> &dist) {
 
 
     // Find shortest path for all vertices
-    for (size_t count = 0; count < graph.size() - 1; count++) {
+    while (!setds.empty()) {
         auto current_state = *(setds.begin());
         setds.erase(setds.begin());
         size_t current_node = current_state.second;
-        int64_t сurrent_dist = current_state.first;
+        int64_t current_dist = current_state.first;
 
         for (const auto &i : graph[current_node]){
             // Get vertex label and weight of current adjacent of u.
@@ -85,12 +85,12 @@ void DijkstraSet(const Graph &graph, size_t src, std::vector<int64_t> &dist) {
             int64_t weight = i.second;
 
             //  If there is shorter path to v through u.
-            if (сurrent_dist != INT64_MAX && dist[v] > сurrent_dist + weight && weight != INT32_MAX) {
+            if (current_dist != INT64_MAX && dist[v] > current_dist + weight && weight != INT32_MAX) {
                 if (dist[v] != INT64_MAX)
                     setds.erase(setds.find(std::make_pair(dist[v], v)));
 
                 // Updating distance of v
-                dist[v] = сurrent_dist + weight;
+                dist[v] = current_dist + weight;
                 setds.insert(std::make_pair(dist[v], v));
             }
         }
@@ -110,8 +110,8 @@ int64_t BiDijkstra(const Graph &graph, size_t v, size_t w) {
 
     // Find shortest path for all vertices
     for (size_t count = 0; count < graph.size() - 1; count++) {
-        size_t current_node_v = ChooseMinDistanceSearch(graph, dist_v, visited_v);
-        size_t current_node_w = ChooseMinDistanceSearch(graph, dist_w, visited_w);
+        size_t current_node_v = MinDistance(graph, dist_v, visited_v);
+        size_t current_node_w = MinDistance(graph, dist_w, visited_w);
 
         if (dist_v[current_node_v] != INT64_MAX)
             for (auto node : graph[current_node_v]) {
@@ -281,7 +281,7 @@ void reconstruct_path(std::unordered_map<size_t, size_t> &came_from, size_t dest
 
 
 // TODO: modify for to-all paths
-void A_Star(Graph &graph, size_t src, size_t dest, std::vector<int32_t> &heur, std::vector<size_t> &output) {
+void A_Star(Graph &graph, size_t src, size_t dest, std::vector<int32_t> &heur, int64_t &length, std::vector<size_t> &output, bool reconstruct = false) {
     // heap containing the nodes to be visited
     std::vector<std::pair<int32_t , size_t >> open_set {{0, src}};
     std::make_heap(open_set.begin(), open_set.end(), std::greater<>{});
@@ -308,23 +308,23 @@ void A_Star(Graph &graph, size_t src, size_t dest, std::vector<int32_t> &heur, s
         size_t current = open_set[open_set.size()-1].second;
         open_set.resize(open_set.size()-1);
 
-        std::cout << "current vertex is " << current << std::endl;
+//        std::cout << "current vertex is " << current << std::endl;
 
         // TODO: maybe if this condition is removed, then we get to-all variant?
         if (current == dest) {
             // TODO: reconstruct path and its price
-            std::cout << "Algorithm finished" << std::endl;
-            reconstruct_path(came_from, dest, output);
+//            std::cout << "Algorithm finished" << std::endl;
+            if (reconstruct) reconstruct_path(came_from, dest, output);
 //            for (size_t &vertex : path) {
 //                std::cout << vertex << " ";
 //            }
 //            std::cout << std::endl;
-            return;
+            length = g_score[dest];
         }
 
         for (auto &neib : graph[current]) {
-            std::cout << neib.first << " " << neib.second << std::endl;
-            std::cout << "    looking at neighbour " << neib.first << std::endl;
+//            std::cout << neib.first << " " << neib.second << std::endl;
+//            std::cout << "    looking at neighbour " << neib.first << std::endl;
             auto relax_score = g_score[current] + neib.second;
             if (relax_score < g_score[neib.first]) {
                 came_from[neib.first] = current;
