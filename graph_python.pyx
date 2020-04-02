@@ -11,9 +11,12 @@ from cython.operator cimport dereference
 from libc.stdint cimport uint32_t, uint64_t, int32_t, int64_t
 
 from graph cimport Graph, GraphGenerator, Edge
+from graph cimport Dijkstra as Dijkstra_cpp
+from graph cimport DijkstraHeap as DijkstraHeap_cpp
 from graph cimport BellmanFord as BellmanFord_cpp
 from graph cimport FloydWarshall as FloydWarshall_cpp
 from graph cimport Johnson as Johnson_cpp
+from graph cimport JohnsonHeap as JohnsonHeap_cpp
 from graph cimport A_Star as A_Star_cpp
 from graph cimport Seidel as Seidel_cpp
 
@@ -147,7 +150,16 @@ cdef class PyGraphGenerator:
 
 def Dijkstra(graph: PyGraph, src: int) -> typing.List[int]:
     cdef vector[int64_t] output
-    BellmanFord_cpp(graph.graph, src, output)
+    Dijkstra_cpp(graph.graph, src, output)
+    out: typing.List[int] = []
+    for dist in output:
+        out.append(dist)
+    return out
+
+
+def DijkstraHeap(graph: PyGraph, src: int) -> typing.List[int]:
+    cdef vector[int64_t] output
+    DijkstraHeap_cpp(graph.graph, src, output)
     out: typing.List[int] = []
     for dist in output:
         out.append(dist)
@@ -177,6 +189,17 @@ def FloydWarshall(graph: PyGraph) -> typing.List[typing.List[int]]:
 def Johnson(graph: PyGraph) -> typing.List[typing.List[int]]:
     cdef vector[vector[int64_t]] output
     Johnson_cpp(graph.graph, output)
+    out: typing.List[typing.List[int]] = []
+    for line in output:
+        out.append([])
+        for dist in line:
+            out[-1].append(dist)
+    return out
+
+
+def JohnsonHeap(graph: PyGraph) -> typing.List[typing.List[int]]:
+    cdef vector[vector[int64_t]] output
+    JohnsonHeap_cpp(graph.graph, output)
     out: typing.List[typing.List[int]] = []
     for line in output:
         out.append([])
