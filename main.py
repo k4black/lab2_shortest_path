@@ -19,16 +19,20 @@ if __name__ == '__main__':
     def simple_heur(vertex: int):
         return 1
 
-    lengths, preds = A_star(graph1, 4, 3, simple_heur)
-    #
-    # for line in lengths:
-    #     for elem in line:
-    #         print(elem, end=' ')
-    #     print()
-    # print()
-    #
-    # for line in preds:
-    #     for elem in line:
-    #         print(elem, end=' ')
-    #     print()
-    # print()
+    lengths, preds = Seidel(graph1)
+
+    for line in lengths:
+        for elem in line:
+            print(elem, end=' ')
+        print()
+    print()
+
+    for line in preds:
+        for elem in line:
+            print(elem, end=' ')
+        print()
+    print()
+
+    length, preds = A_star(graph1, 4, 3, simple_heur, True)
+    print(length)
+    print(preds)
