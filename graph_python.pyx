@@ -67,7 +67,7 @@ cdef class PyGraph:
 
     # TODO: accessors
     def get_matrix(self) -> typing.List[typing.List[int]]:
-        print('matrix print')
+#        print('matrix print')
 #        cdef vector[vector[int32_t]] out = self.graph.get_matrix()
         output:  typing.List[typing.List[int]] = []
 #        for line in self.graph.get_matrix():
@@ -79,9 +79,9 @@ cdef class PyGraph:
             output.append([])
             for j in range(len(self)):
                 output[-1].append(self.graph.get_weight(i, j))
-                print(self.graph.get_weight(i, j), end=' ')
-            print()
-        print()
+#                print(self.graph.get_weight(i, j), end=' ')
+#            print()
+#        print()
         return output
 
     def remove_neighbour(self, node_index: int, neighbour_index: int):
@@ -196,10 +196,10 @@ def A_star(graph: PyGraph, src: int, dest: int, heuristics: typing.Callable[[int
         out.append(vertex)
     return out
 
-def Seidel(graph: PyGraph) -> typing.Tuple[typing.List[typing.List[int]], typing.List[typing.List[int]]]:
+def Seidel(graph: PyGraph, reconstruct: bool = False) -> typing.Tuple[typing.List[typing.List[int]], typing.List[typing.List[int]]]:
     cdef vector[vector[int64_t]] lengths_cpp
     cdef vector[vector[size_t]] preds_cpp
-    Seidel_cpp(graph.graph, lengths_cpp, preds_cpp)
+    Seidel_cpp(graph.graph, lengths_cpp, preds_cpp, reconstruct)
     lengths: typing.List[typing.List[int]] = []
     preds: typing.List[typing.List[int]] = []
 
@@ -212,10 +212,12 @@ def Seidel(graph: PyGraph) -> typing.Tuple[typing.List[typing.List[int]], typing
 #    print()
 
     for i in range(len(graph)):
+        lengths.append([])
         for j in range(len(graph)):
-            print(lengths_cpp[i][j], end=' ')
-        print()
-    print()
+            lengths[-1].append(lengths_cpp[i][j])
+#            print(lengths_cpp[i][j], end=' ')
+#        print()
+#    print()
 
 #    for line in preds_cpp:
 ##        preds.append([])
@@ -225,10 +227,10 @@ def Seidel(graph: PyGraph) -> typing.Tuple[typing.List[typing.List[int]], typing
 #        print()
 #    print()
 
-    for i in range(len(graph)):
-        for j in range(len(graph)):
-            print(preds_cpp[i][j], end=' ')
-        print()
-    print()
+#    for i in range(len(graph)):
+#        for j in range(len(graph)):
+#            print(preds_cpp[i][j], end=' ')
+#        print()
+#    print()
 
     return lengths, preds

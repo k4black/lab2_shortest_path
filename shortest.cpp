@@ -8,6 +8,8 @@
 #include <cmath>
 #include <random>
 #include <boost/numeric/ublas/matrix_expression.hpp>
+#include <boost/numeric/ublas/operation.hpp>
+#include <boost/numeric/ublas/operation_blocked.hpp>
 
 
 int64_t MinDistance(const Graph& graph, std::vector<int64_t> &dist, std::vector<bool> &sptSet)  {
@@ -257,7 +259,10 @@ void A_Star(Graph &graph, size_t src, size_t dest, std::vector<int32_t> &heur, s
 //TODO: int32_t -> {0; 1}, as naive Seidel is for unweighted graph only
 boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::matrix<int64_t> &A) {
 
-    boost::numeric::ublas::matrix<int32_t> Z = boost::numeric::ublas::prod(A, A);  //TODO: dedicated function for matrix exponentiation in uBLAS/in general?
+    boost::numeric::ublas::matrix<int32_t> Z{A.size1(), A.size1()};
+//    boost::numeric::ublas::axpy_prod(A, A, Z);
+    Z = boost::numeric::ublas::block_prod<boost::numeric::ublas::matrix<int32_t>, 64>(A, A);
+//    boost::numeric::ublas::prod(A, A);  //TODO: dedicated function for matrix exponentiation in uBLAS/in general?
     boost::numeric::ublas::matrix<int64_t> B {A.size1(), A.size1()};  //TODO: dedicated class for square matrices in uBLAS?
     for (size_t i = 0; i < A.size1(); ++i) {
         for (size_t j = 0; j < A.size1(); ++j) {
@@ -286,7 +291,10 @@ boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::ma
             degree[i] += A(i, j);
         }
     }
-    auto X = boost::numeric::ublas::prod(T, A);
+    boost::numeric::ublas::matrix<int32_t> X {A.size1(), A.size1()};
+//    auto X = boost::numeric::ublas::prod(T, A);
+//    boost::numeric::ublas::axpy_prod(T, A, X);
+    X = boost::numeric::ublas::block_prod<boost::numeric::ublas::matrix<int32_t>, 64>(T, A);
     boost::numeric::ublas::matrix<int32_t> D {A.size1(), A.size1()};
     for (size_t i = 0; i < A.size1(); ++i) {
         for (size_t j = 0; j < A.size1(); ++j) {
@@ -297,7 +305,11 @@ boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::ma
 }
 
 boost::numeric::ublas::matrix<int32_t> BPWM(boost::numeric::ublas::matrix<int64_t> &A, boost::numeric::ublas::matrix<int32_t> &Dr) {
-    boost::numeric::ublas::matrix<int64_t> W = -boost::numeric::ublas::prod(A, Dr);
+//    std::cout << "A:" << A << std::endl;
+//    std::cout << "Dr:" << Dr << std::endl;
+    boost::numeric::ublas::matrix<int64_t> W{A.size1(), A.size2()};
+    boost::numeric::ublas::axpy_prod(-A, Dr, W);
+//    boost::numeric::ublas::matrix<int64_t> W = -boost::numeric::ublas::prod(A, Dr);
     for (size_t l = 0; l <= std::ceil(std::log2(W.size1())) - 1; ++l) {
         int64_t d = std::pow(2, l);
         for (size_t i = 0; i < std::ceil(3.42 * std::log2(W.size1())); ++i) {
@@ -320,10 +332,21 @@ boost::numeric::ublas::matrix<int32_t> BPWM(boost::numeric::ublas::matrix<int64_
                     Y(m, n) = Dr(k[m], n);
                 }
             }
-            boost::numeric::ublas::matrix<int64_t> C = boost::numeric::ublas::prod(X, Y);
+            boost::numeric::ublas::matrix<int64_t> C{A.size1(), A.size2()};
+//            boost::numeric::ublas::prod(X, Y);
+            boost::numeric::ublas::axpy_prod(X, Y, C);
+//            std::cout << "C:" << C << std::endl;
             for (size_t m = 0; m < W.size1(); ++m) {
                 for (size_t n = 0; n < W.size2(); ++n) {
-//                    std::cout << C(m, n) << std::endl;
+//                    if (C(m, n) < 0 || C(m, n) >= A.size2() || C(m, n) >= Dr.size1() || m >= A.size1() || n >= Dr.size2()) {
+//                        std::cout << "Will fail, C(m, n) = " << C(m, n) << std::endl;
+//                        return boost::numeric::ublas::matrix<int32_t>{};
+//                    }
+//                    std::cout << C(m, n) << " ";
+//                    std::cout << W(m, n) << " ";
+//                    std::cout << A(m, C(m, n)) << " ";
+//                    std::cout << Dr(C(m, n), n) << " ";
+//                    std::cout << std::endl;
                     if ((W(m, n) < 0) && (A(m, C(m, n)) == 1) && (Dr(C(m, n), n) == 1)) {
                         W(m, n) = C(m, n);
                     }
@@ -348,8 +371,7 @@ boost::numeric::ublas::matrix<int32_t> BPWM(boost::numeric::ublas::matrix<int64_
 
 //TODO: std::functional to pass custom matrix multiplication functions
 //TODO: int32_t -> {0; 1}, as naive Seidel is for unweighted graph only
-void Seidel(const Graph &graph, std::vector<std::vector<int64_t>> &lengths, std::vector<std::vector<size_t>> &preds) {
-    //TODO: update Cython for new signature
+void Seidel(const Graph &graph, std::vector<std::vector<int64_t>> &lengths, std::vector<std::vector<size_t>> &preds, bool reconstruct = false) {
     lengths.clear();
     for (size_t i = 0; i < graph.size(); ++i) {
         lengths.emplace_back(graph.size());
@@ -372,22 +394,32 @@ void Seidel(const Graph &graph, std::vector<std::vector<int64_t>> &lengths, std:
         }
     }
 
-    std::vector<boost::numeric::ublas::matrix<int32_t>> Wr{};
-    Wr.emplace_back(graph.size(), graph.size());
-    Wr.emplace_back(graph.size(), graph.size());
-    Wr.emplace_back(graph.size(), graph.size());
-    for (int r = 0; r <= 2; ++r) {
-        boost::numeric::ublas::matrix<int32_t> Dr{graph.size(), graph.size()};
+    if (reconstruct) {
+        std::vector<boost::numeric::ublas::matrix<int32_t>> Wr{};
+        Wr.emplace_back(graph.size(), graph.size());
+        Wr.emplace_back(graph.size(), graph.size());
+        Wr.emplace_back(graph.size(), graph.size());
+        for (int r = 0; r <= 2; ++r) {
+            boost::numeric::ublas::matrix<int32_t> Dr{graph.size(), graph.size()};
+            for (size_t i = 0; i < graph.size(); ++i) {
+                for (size_t j = 0; j < graph.size(); ++j) {
+                    if ((D(i, j) + 1) % 3 == r) { Dr(i, j) = 1; } else { Dr(i, j) = 0; }
+                }
+            }
+            Wr[r] = BPWM(A, Dr);
+//        if (Wr[r].size1() == 0 && Wr[r].size2() == 0) {
+//            for (size_t i = 0; i < graph.size(); ++i) {
+//                for (size_t j = 0; j < graph.size(); ++j) {
+//                    preds[i][j] = -1;
+//                }
+//            }
+//            return;
+//        }
+        }
         for (size_t i = 0; i < graph.size(); ++i) {
             for (size_t j = 0; j < graph.size(); ++j) {
-                if ((D(i, j) + 1) % 3 == r) {Dr(i, j) = 1;} else {Dr(i, j) = 0;}
+                preds[i][j] = Wr[D(i, j) % 3](i, j);
             }
-        }
-        Wr[r] = BPWM(A, Dr);
-    }
-    for (size_t i = 0; i < graph.size(); ++i) {
-        for (size_t j = 0; j < graph.size(); ++j) {
-            preds[i][j] = Wr[D(i, j) % 3](i, j);
         }
     }
 }

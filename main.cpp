@@ -12,6 +12,11 @@ using namespace boost::numeric::ublas;
 
 int main() {
 
+//    boost::numeric::ublas::matrix<int32_t> test{};
+//    std::cout << test.size1() <<std::endl;
+//    std::cout << test.size2() <<std::endl;
+//    return 0;
+
 //    Graph graph(5);
 //    std::vector<Edge> edges = { { 0, 1, -1 }, { 0, 2, 4 },
 //                              { 1, 2, 3 }, { 1, 3, 2 },
@@ -66,7 +71,7 @@ int main() {
     std::vector<std::vector<int64_t>> lengths{};
     std::vector<std::vector<size_t>> preds{};
 
-    Seidel(graph1, lengths, preds);
+    Seidel(graph1, lengths, preds, true);
 
     for (std::vector<int64_t> &i : lengths) {
         for (int64_t j : i) std::cout << j << " ";

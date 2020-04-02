@@ -16,22 +16,16 @@ if __name__ == '__main__':
                              [1, 3, 1],
                              [3, 5, 1]])
 
-    for line in graph1.get_matrix():
-        for elem in line:
-            print(elem, end=' ')
-        print()
-    print()
-
     lengths, preds = Seidel(graph1)
-
-    for line in lengths:
-        for elem in line:
-            print(elem, end=' ')
-        print()
-    print()
-
-    for line in preds:
-        for elem in line:
-            print(elem, end=' ')
-        print()
-    print()
+    #
+    # for line in lengths:
+    #     for elem in line:
+    #         print(elem, end=' ')
+    #     print()
+    # print()
+    #
+    # for line in preds:
+    #     for elem in line:
+    #         print(elem, end=' ')
+    #     print()
+    # print()
