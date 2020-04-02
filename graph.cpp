@@ -25,6 +25,9 @@ public:
     size_t second;
     int32_t weight;
 
+    //Cython requirement: C++ class must have a nullary constructor to be stack allocated
+    Edge() = default;
+
     Edge(size_t first, size_t second, int32_t weight) {
         this->first = first;
         this->second = second;
@@ -87,6 +90,21 @@ public:
         for (auto &vec : matrix) {
             for (auto &i : vec) {
                 i = INT32_MAX;
+            }
+        }
+
+        for (auto &edge : edges) {
+            set_neighbour(edge.first, edge.second, edge.weight);
+        }
+    }
+
+    void build_unweighted(const std::vector<Edge> &edges) {
+        for (auto &vec : adjacency) {
+            vec.clear();
+        }
+        for (auto &vec : matrix) {
+            for (auto &i : vec) {
+                i = 0;
             }
         }
 

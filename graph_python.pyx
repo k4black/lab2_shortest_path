@@ -10,12 +10,22 @@ from libcpp.memory cimport shared_ptr
 from cython.operator cimport dereference
 from libc.stdint cimport uint32_t, uint64_t, int32_t, int64_t
 
-from graph cimport Graph, GraphGenerator
+from graph cimport Graph, GraphGenerator, Edge
 from graph cimport BellmanFord as BellmanFord_cpp
 from graph cimport FloydWarshall as FloydWarshall_cpp
 from graph cimport Johnson as Johnson_cpp
-#from graph cimport A_Star as A_Star_cpp
+from graph cimport A_Star as A_Star_cpp
 from graph cimport Seidel as Seidel_cpp
+
+
+cdef class PyEdge:
+    cdef Edge edge
+
+    def __cinit__(self, first: int, second: int, weight: int):
+        self.edge = Edge(first, second, weight)
+
+    def __lt__(self, other: PyEdge):
+        return self.edge < other.edge
 
 
 cdef class PyGraph:
@@ -42,6 +52,12 @@ cdef class PyGraph:
         for edge in edges:
             self.graph.set_neighbour(edge[0], edge[1], edge[2])
 
+    def build_unweighted(self, edges: typing.List[typing.List[int, int, int]]):
+        cdef vector[Edge] edges_cpp
+        for edge in edges:
+            edges_cpp.push_back(Edge(edge[0], edge[1], edge[2]))  # no emplace back in Cython currently
+        self.graph.build_unweighted(edges_cpp)
+
     def build_directed(self, edges: typing.List[typing.List[int, int, int]]):
         # TODO current C++ implementation needs vector of Edges
         # To avoid this (unneeded) overhead, building here via set_neighbour directly
@@ -50,6 +66,23 @@ cdef class PyGraph:
             self.graph.set_neighbour_directed(edge[0], edge[1], edge[2])
 
     # TODO: accessors
+    def get_matrix(self) -> typing.List[typing.List[int]]:
+        print('matrix print')
+#        cdef vector[vector[int32_t]] out = self.graph.get_matrix()
+        output:  typing.List[typing.List[int]] = []
+#        for line in self.graph.get_matrix():
+#            pass
+#            output.append([])
+#            for elem in line:
+#                output[-1].append(elem)
+        for i in range(len(self)):
+            output.append([])
+            for j in range(len(self)):
+                output[-1].append(self.graph.get_weight(i, j))
+                print(self.graph.get_weight(i, j), end=' ')
+            print()
+        print()
+        return output
 
     def remove_neighbour(self, node_index: int, neighbour_index: int):
         self.graph.remove_neighbour(node_index, neighbour_index)
@@ -151,12 +184,51 @@ def Johnson(graph: PyGraph) -> typing.List[typing.List[int]]:
             out[-1].append(dist)
     return out
 
-def Seidel(graph: PyGraph) -> typing.List[typing.List[int]]:
-    cdef vector[vector[int64_t]] output
-    Seidel_cpp(graph.graph, output)
-    out: typing.List[typing.List[int]] = []
-    for line in output:
-        out.append([])
-        for dist in line:
-            out[-1].append(dist)
+# TODO: return float from heuristics?
+def A_star(graph: PyGraph, src: int, dest: int, heuristics: typing.Callable[[int], int]) -> typing.List[int]:
+    cdef vector[int32_t] heur
+    for i in range(len(graph)):
+        heur.push_back(heuristics(i))
+    cdef vector[size_t] output
+    A_Star_cpp(graph.graph, src, dest, heur, output)
+    out: typing.List[int] = []
+    for vertex in output:
+        out.append(vertex)
     return out
+
+def Seidel(graph: PyGraph) -> typing.Tuple[typing.List[typing.List[int]], typing.List[typing.List[int]]]:
+    cdef vector[vector[int64_t]] lengths_cpp
+    cdef vector[vector[size_t]] preds_cpp
+    Seidel_cpp(graph.graph, lengths_cpp, preds_cpp)
+    lengths: typing.List[typing.List[int]] = []
+    preds: typing.List[typing.List[int]] = []
+
+#    for line in lengths_cpp:
+##        lengths.append([])
+#        for dist in line:
+##            lengths[-1].append(dist)
+#            print(dist, end=' ')
+#        print()
+#    print()
+
+    for i in range(len(graph)):
+        for j in range(len(graph)):
+            print(lengths_cpp[i][j], end=' ')
+        print()
+    print()
+
+#    for line in preds_cpp:
+##        preds.append([])
+##        for pred in line:
+##            preds[-1].append(pred)
+##            print(pred, end=' ')
+#        print()
+#    print()
+
+    for i in range(len(graph)):
+        for j in range(len(graph)):
+            print(preds_cpp[i][j], end=' ')
+        print()
+    print()
+
+    return lengths, preds

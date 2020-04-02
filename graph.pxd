@@ -1,4 +1,4 @@
-from libc.stddef cimport size_t, int
+from libc.stddef cimport size_t
 from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
@@ -13,6 +13,7 @@ cdef extern from "graph.cpp":
         pass
 
     cdef cppclass Edge:
+        Edge() except +
         Edge(size_t first, size_t second, int32_t weight) except +
 
         bool operator<(const Edge& a) const
@@ -24,9 +25,12 @@ cdef extern from "graph.cpp":
         void reserve(size_t num_of_nodes)
         void build(const vector[Edge] &edges)
         void build(const set[Edge] &edges)
+        void build_unweighted(const vector[Edge] &edges)
         void build_directed(const vector[Edge] &edges)
         const vector[size_t] &operator[](size_t node_index) const
         const vector[size_t] &get_neighbours(size_t node_index) const
+        const vector[vector[int32_t]] &get_matrix()
+        int32_t get_weight(size_t node_index, size_t neighbour_index)
         # shared_ptr get_node(size_t node_index) const
         void remove_neighbour(size_t node_index, size_t neighbour_index)
         void remove_neighbour_directed(size_t node_index, size_t neighbour_index)
@@ -80,5 +84,5 @@ cdef extern from "shortest.cpp":
     cdef void BellmanFord(Graph &graph, size_t src, vector[int64_t] &output)
     cdef void FloydWarshall(Graph &graph, vector[vector[int64_t]] &output)
     cdef void Johnson(Graph &graph, vector[vector[int64_t]] &output)
-#    cdef void A_Star(Graph &graph, size_t src, size_t dest, )
-    cdef void Seidel(Graph &graph, vector[vector[int64_t]] &output)
+    cdef void A_Star(Graph &graph, size_t src, size_t dest, vector[int32_t] &heur, vector[size_t] &output)
+    cdef void Seidel(Graph &graph, vector[vector[int64_t]] &lengths, vector[vector[size_t]] &preds)

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <utility>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <cmath>
+#include <random>
 #include <boost/numeric/ublas/matrix_expression.hpp>
 
 
@@ -186,14 +188,13 @@ void reconstruct_path(std::unordered_map<size_t, size_t> &came_from, size_t dest
 
     while (came_from.find(current) != came_from.end() && came_from[current] != current) {
         current = came_from[current];
-        std::cout << "    " << current << std::endl;
         path.push_back(current);
     }
 }
 
 
 // TODO: modify for to-all paths
-void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::function<int64_t (size_t)> heuristics = simple_heuristic) {
+void A_Star(Graph &graph, size_t src, size_t dest, std::vector<int32_t> &heur, std::vector<size_t> &output) {
     // heap containing the nodes to be visited
     std::vector<std::pair<int32_t , size_t >> open_set {{0, src}};
     std::make_heap(open_set.begin(), open_set.end(), std::greater<>{});
@@ -213,7 +214,7 @@ void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::functio
     for (size_t i = 0; i < graph.size(); ++i) {
         f_score[i] = INT64_MAX;
     }
-    f_score[src] = heuristics(src);
+    f_score[src] = heur[src];
 
     while (!open_set.empty()) {
         std::pop_heap(open_set.begin(), open_set.end());
@@ -226,12 +227,11 @@ void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::functio
         if (current == dest) {
             // TODO: reconstruct path and its price
             std::cout << "Algorithm finished" << std::endl;
-            std::vector<size_t> path;
-            reconstruct_path(came_from, dest, path);
-            for (size_t &vertex : path) {
-                std::cout << vertex << " ";
-            }
-            std::cout << std::endl;
+            reconstruct_path(came_from, dest, output);
+//            for (size_t &vertex : path) {
+//                std::cout << vertex << " ";
+//            }
+//            std::cout << std::endl;
             return;
         }
 
@@ -242,7 +242,7 @@ void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::functio
             if (relax_score < g_score[neib.first]) {
                 came_from[neib.first] = current;
                 g_score[neib.first] = relax_score;
-                f_score[neib.first] = g_score[neib.first] + heuristics(neib.first);
+                f_score[neib.first] = g_score[neib.first] + heur[neib.first];
                 // if neib not in open_set
                 if (std::find_if(open_set.begin(), open_set.end(), [&neib](std::pair<int32_t, size_t> elem){return elem.second == neib.first;}) == open_set.end()) {
                     open_set.emplace_back(neib.second, neib.first);  // TODO: this way?
@@ -257,18 +257,6 @@ void A_Star(Graph &graph, size_t src, size_t dest, int64_t &result, std::functio
 //TODO: int32_t -> {0; 1}, as naive Seidel is for unweighted graph only
 boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::matrix<int64_t> &A) {
 
-    bool ret = true;
-    for (size_t i = 0; i < A.size1(); ++i) {
-        for (size_t j = 0; j < A.size1(); ++j) {
-            if (A(i, j) == 0 && i != j) {
-                ret = false;
-                break;
-            }
-        }
-        if (!ret) {break;}
-    }
-    if (ret) {return A;}
-
     boost::numeric::ublas::matrix<int32_t> Z = boost::numeric::ublas::prod(A, A);  //TODO: dedicated function for matrix exponentiation in uBLAS/in general?
     boost::numeric::ublas::matrix<int64_t> B {A.size1(), A.size1()};  //TODO: dedicated class for square matrices in uBLAS?
     for (size_t i = 0; i < A.size1(); ++i) {
@@ -276,6 +264,19 @@ boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::ma
             if ((A(i, j) == 1 || Z(i, j) > 0) && i != j) {B(i, j) = 1;} else {B(i, j) = 0;}
         }
     }
+
+    bool ret = true;
+    for (size_t i = 0; i < A.size1(); ++i) {
+        for (size_t j = 0; j < A.size1(); ++j) {
+            if (B(i, j) == 0 && i != j) {
+                ret = false;
+                break;
+            }
+        }
+        if (!ret) {break;}
+    }
+    if (ret) {return 2*B-A;}
+
     auto T = Seidel_internal(B);
     std::vector<int64_t> degree{};
     degree.reserve(A.size1());
@@ -295,19 +296,98 @@ boost::numeric::ublas::matrix<int64_t> Seidel_internal(boost::numeric::ublas::ma
     return D;
 }
 
+boost::numeric::ublas::matrix<int32_t> BPWM(boost::numeric::ublas::matrix<int64_t> &A, boost::numeric::ublas::matrix<int32_t> &Dr) {
+    boost::numeric::ublas::matrix<int64_t> W = -boost::numeric::ublas::prod(A, Dr);
+    for (size_t l = 0; l <= std::ceil(std::log2(W.size1())) - 1; ++l) {
+        int64_t d = std::pow(2, l);
+        for (size_t i = 0; i < std::ceil(3.42 * std::log2(W.size1())); ++i) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<size_t> dis(0, A.size1() - 1);
+            std::vector<size_t> k{};
+            for (size_t j = 0; j < d; ++j) {
+                k.push_back(dis(gen));
+            }
+            boost::numeric::ublas::matrix<int32_t> X{A.size1(), (size_t) d};
+            for (size_t n = 0; n < d; ++n) {
+                for (size_t m = 0; m < A.size1(); ++m) {
+                    X(m, n) = k[n] * A(m, k[n]);
+                }
+            }
+            boost::numeric::ublas::matrix<int32_t> Y{(size_t) d, A.size1()};
+            for (size_t m = 0; m < d; ++m) {
+                for (size_t n = 0; n < A.size1(); ++n) {
+                    Y(m, n) = Dr(k[m], n);
+                }
+            }
+            boost::numeric::ublas::matrix<int64_t> C = boost::numeric::ublas::prod(X, Y);
+            for (size_t m = 0; m < W.size1(); ++m) {
+                for (size_t n = 0; n < W.size2(); ++n) {
+//                    std::cout << C(m, n) << std::endl;
+                    if ((W(m, n) < 0) && (A(m, C(m, n)) == 1) && (Dr(C(m, n), n) == 1)) {
+                        W(m, n) = C(m, n);
+                    }
+                }
+            }
+        }
+    }
+    for (size_t m = 0; m < W.size1(); ++m) {
+        for (size_t n = 0; n < W.size2(); ++n) {
+            if (W(m, n) < 0) {
+                for (size_t p = 0; p < W.size1(); ++p) {
+                    if ((A(m, p) == 1) && (Dr(p, n) == 1)) {
+                        W(m, n) = p;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return W;
+}
+
 //TODO: std::functional to pass custom matrix multiplication functions
 //TODO: int32_t -> {0; 1}, as naive Seidel is for unweighted graph only
-void Seidel(const Graph &graph, std::vector<std::vector<int64_t>> &output) {
+void Seidel(const Graph &graph, std::vector<std::vector<int64_t>> &lengths, std::vector<std::vector<size_t>> &preds) {
+    //TODO: update Cython for new signature
+    lengths.clear();
+    for (size_t i = 0; i < graph.size(); ++i) {
+        lengths.emplace_back(graph.size());
+    }
+    preds.clear();
+    for (size_t i = 0; i < graph.size(); ++i) {
+        preds.emplace_back(graph.size());
+    }
     boost::numeric::ublas::matrix<int64_t> A {graph.size(), graph.size()};
     for (size_t i = 0; i < graph.size(); ++i) {
         for (size_t j = 0; j < graph.size(); ++j) {
             A(i, j) = graph.get_matrix()[i][j];
         }
     }
-    auto ret = Seidel_internal(A);
+    auto D = Seidel_internal(A);
+//    std::cout << D << std::endl;
     for (size_t i = 0; i < A.size1(); ++i) {
         for (size_t j = 0; j < A.size1(); ++j) {
-            output[i][j] = ret(i, j);
+            lengths[i][j] = D(i, j);
+        }
+    }
+
+    std::vector<boost::numeric::ublas::matrix<int32_t>> Wr{};
+    Wr.emplace_back(graph.size(), graph.size());
+    Wr.emplace_back(graph.size(), graph.size());
+    Wr.emplace_back(graph.size(), graph.size());
+    for (int r = 0; r <= 2; ++r) {
+        boost::numeric::ublas::matrix<int32_t> Dr{graph.size(), graph.size()};
+        for (size_t i = 0; i < graph.size(); ++i) {
+            for (size_t j = 0; j < graph.size(); ++j) {
+                if ((D(i, j) + 1) % 3 == r) {Dr(i, j) = 1;} else {Dr(i, j) = 0;}
+            }
+        }
+        Wr[r] = BPWM(A, Dr);
+    }
+    for (size_t i = 0; i < graph.size(); ++i) {
+        for (size_t j = 0; j < graph.size(); ++j) {
+            preds[i][j] = Wr[D(i, j) % 3](i, j);
         }
     }
 }
